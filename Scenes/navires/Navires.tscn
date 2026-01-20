@@ -1,8 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://cfhs5uyx5g4go"]
+[gd_scene load_steps=3 format=3 uid="uid://cfhs5uyx5g4go"]
 
-[ext_resource type="Script" uid="uid://dcgfi57ni6w5q" path="res://Scripts/navires/Navires.gd" id="1_m8d8p"]
+[ext_resource type="Script" uid="uid://dhuetiveiynws" path="res://Scenes/navires/navires.gd" id="1_32h2o"]
+[ext_resource type="Texture2D" uid="uid://b2uq5ah7tdr7y" path="res://Scenes/Capture d’écran 2026-01-09 094814.png" id="1_m8d8p"]
 
-[node name="Navires" type="Node3D"]
-script = ExtResource("1_m8d8p")
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_32h2o")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_m8d8p")
+
+[node name="Camera2D" type="Camera2D" parent="."]
