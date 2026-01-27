@@ -1,13 +1,15 @@
-[gd_scene load_steps=9 format=3 uid="uid://ertxm6ey6fes"]
+[gd_scene load_steps=11 format=3 uid="uid://ertxm6ey6fes"]
 
 [ext_resource type="Script" uid="uid://i830ncncgvsu" path="res://Scenes/map.gd" id="1_idj7w"]
-[ext_resource type="Texture2D" uid="uid://b6qg7pxxcuysc" path="res://Scenes/TileWater.png" id="2_50glp"]
+[ext_resource type="Texture2D" uid="uid://cf1sj0he3ww2d" path="res://Scenes/TileWater.png" id="2_50glp"]
 [ext_resource type="PackedScene" uid="uid://cfhs5uyx5g4go" path="res://Scenes/navires/Navires.tscn" id="2_kln2b"]
-[ext_resource type="Texture2D" uid="uid://cdsvh0fnb304u" path="res://Scenes/TileDeepWater.png" id="3_vy5pj"]
-[ext_resource type="Texture2D" uid="uid://dmtfih3ewyv8h" path="res://Scenes/TileSand.png" id="4_bmxlf"]
-[ext_resource type="Texture2D" uid="uid://dny1o4ncfp0f4" path="res://Scenes/TileEarth.png" id="5_4kpch"]
-[ext_resource type="Texture2D" uid="uid://uy4vhgjquig4" path="res://Scenes/TileForest.png" id="6_grg3l"]
-[ext_resource type="Texture2D" uid="uid://7t41l14qyp82" path="res://Scenes/TileMountain.png" id="7_frkhe"]
+[ext_resource type="Texture2D" uid="uid://dl8vuyfby44lh" path="res://Scenes/TileDeepWater.png" id="3_vy5pj"]
+[ext_resource type="Texture2D" uid="uid://cp27s2qmg31aa" path="res://Scenes/TileSand.png" id="4_bmxlf"]
+[ext_resource type="Texture2D" uid="uid://dykacfjgni06m" path="res://Scenes/TileEarth.png" id="5_4kpch"]
+[ext_resource type="Texture2D" uid="uid://b7sd3takqslt2" path="res://Scenes/TileForest.png" id="6_grg3l"]
+[ext_resource type="Texture2D" uid="uid://bn4m5o2hjrd2v" path="res://Scenes/TileMountain.png" id="7_frkhe"]
+[ext_resource type="PackedScene" uid="uid://dbayx8jjgjey2" path="res://Scenes/GameManager.tscn" id="9_vy5pj"]
+[ext_resource type="Script" uid="uid://ddrseokeg42dh" path="res://Scenes/canvas_layer.gd" id="10_bmxlf"]
 
 [node name="Main" type="Node2D"]
 
@@ -24,4 +26,7 @@ TileMountain = ExtResource("7_frkhe")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 
+[node name="GameManager" parent="." instance=ExtResource("9_vy5pj")]
+
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+script = ExtResource("10_bmxlf")

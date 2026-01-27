@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://cfhs5uyx5g4go"]
 
 [ext_resource type="Script" uid="uid://dhuetiveiynws" path="res://Scenes/navires/navires.gd" id="1_32h2o"]
-[ext_resource type="Texture2D" uid="uid://sr7go0mp2yxc" path="res://Scenes/Capture d’écran 2026-01-09 094814.png" id="1_m8d8p"]
+[ext_resource type="Texture2D" uid="uid://b2uq5ah7tdr7y" path="res://Scenes/Capture d’écran 2026-01-09 094814.png" id="1_m8d8p"]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource("1_32h2o")
