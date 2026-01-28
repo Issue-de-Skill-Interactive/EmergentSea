@@ -24,6 +24,7 @@ TileForest = ExtResource("6_grg3l")
 TileMountain = ExtResource("7_frkhe")
 
 [node name="Navires" parent="." instance=ExtResource("2_kln2b")]
+script = null
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("9_4kpch")

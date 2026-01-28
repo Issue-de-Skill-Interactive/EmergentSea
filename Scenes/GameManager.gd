@@ -1,3 +1,13 @@
+###===================================================================###
+##								GameManager							   ##
+# Ce script permet de coordonner le reste du jeu						#
+# Parmi les fonctions proposées, il y a :								#
+#  - la gestion de l'apparition des nouveaux bateaux					#
+#  - 																	#
+#  - 																	#
+##																	   ##
+###===================================================================###
+
 extends Node
 
 # Scène du navire
@@ -21,14 +31,17 @@ func _enter_tree():
 
 
 # Liste des joueurs (pour le futur multijoueur)
+# au début, un joueur = 1 bateau qui spawn
 var joueurs := {
 	1: { "nom": "Joueur 1", "couleur": Color.BLUE },
 	2: { "nom": "Joueur 2", "couleur": Color.RED }
 }
 
 func _ready():
-	pass
+	pass # circulez y'a rien à voir
 
+# faire apparaître un bateau sur la carte
+# le bateau est attaché à un joueur et a une position
 func spawn_navire(joueur_id: int, position: Vector2):
 	var navire := navire_scene.instantiate()
 
@@ -36,21 +49,24 @@ func spawn_navire(joueur_id: int, position: Vector2):
 	navire.joueur_id = joueur_id
 	navire.global_position = position
 
+	# ajout du navire dans le jeu
 	add_child(navire)
 
-	# Stocker dans un dictionnaire
+	# on enregistre le navire dans un tableau pour plus tard
 	navires[joueur_id] = navire
 
-
+# cette fonction se déclenche à la réception d'un signal
+# indiquant que la génération de la map est terminée
 func _on_map_generated():
-	# Maintenant la carte existe, on peut spawn les navires
+	# Maintenant la carte existe, on peut faire spawn les navires
 	for player in joueurs:
+		# normalement, un bateau spawn par joueur
 		spawn_navire_random(player)
-	#spawn_navire_random(2)
 
 
-
+# permet de faire spawn le bateau à une position aléatoire
 func spawn_navire_random(joueur_id: int):
+	# on prend une tuile navigable au hasard
 	var pos = map.get_random_ocean_position()
-
+	# et on y met le bateau
 	spawn_navire(joueur_id, pos)

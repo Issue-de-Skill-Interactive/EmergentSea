@@ -1,3 +1,14 @@
+###===================================================================###
+##							Script de Caméra						   ##
+# Ce script permet de controller la caméra du joueur					#
+# Parmi les fonctions proposées, il y a :								#
+#  - la possibilité de déplacer la caméra dans la direction voulue		#
+#  - il est possible de zoomer et dézoomer								#
+#  - on peut déplacer la caméra à un point voulu						#
+##																	   ##
+###===================================================================###
+
+
 extends Camera2D
 
 @export var speed := 3600.0
