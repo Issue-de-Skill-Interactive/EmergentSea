@@ -21,15 +21,6 @@ extends Node2D
 
 
 # =========================
-# Zoom caméra
-@export var min_zoom := 0.1
-@export var max_zoom := 3.0
-@export var zoom_step := 0.15
-@export var camera_speed := 600.0
-
-var target_zoom := Vector2.ONE
-
-# =========================
 # UI stats
 var stats_panel: Panel
 var vie_label: Label
@@ -65,9 +56,10 @@ func _ready():
 	case_actuelle = map.monde_vers_case(global_position)
 
 	# ---------- Caméra ----------
-	if camera:
-		camera.make_current()
-		target_zoom = camera.zoom
+	# Trouver la caméra indépendante
+	var cam = get_tree().get_first_node_in_group("camera_controller")
+	if cam:
+		cam.set_target(self)
 
 	# ---------- UI STATS (haut droite) ----------
 	_init_stats_ui()
@@ -177,29 +169,10 @@ func _input(event: InputEvent) -> void:
 					if not path.is_empty():
 						is_moving = true
 
-		# ===== ZOOM (STABLE) =====
-		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and camera:
-			target_zoom -= Vector2(zoom_step, zoom_step)
-			target_zoom = target_zoom.clamp(
-				Vector2(min_zoom, min_zoom),
-				Vector2(max_zoom, max_zoom)
-			)
-
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and camera:
-			target_zoom += Vector2(zoom_step, zoom_step)
-			target_zoom = target_zoom.clamp(
-				Vector2(min_zoom, min_zoom),
-				Vector2(max_zoom, max_zoom)
-			)
-
 
 # =========================
 # PROCESS
 func _process(delta):
-	# ----- Zoom fluide -----
-	if camera:
-		camera.zoom = camera.zoom.lerp(target_zoom, 0.2)
-
 	# ----- Timer UI stats -----
 	if stats_visible:
 		stats_timer -= delta
@@ -222,15 +195,6 @@ func _process(delta):
 				is_moving = false
 		else:
 			global_position += direction.normalized() * vitesse * delta
-
-	# ----- Caméra clavier -----
-	if camera:
-		var move := Vector2.ZERO
-		if Input.is_action_pressed("ui_up"): move.y -= camera_speed * delta
-		if Input.is_action_pressed("ui_down"): move.y += camera_speed * delta
-		if Input.is_action_pressed("ui_left"): move.x -= camera_speed * delta
-		if Input.is_action_pressed("ui_right"): move.x += camera_speed * delta
-		camera.position += move
 
 
 # =========================

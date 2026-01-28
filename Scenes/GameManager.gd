@@ -8,11 +8,12 @@ var navires := {}
 
 @onready var map := get_tree().get_first_node_in_group("map")
 
-
+# Ce qui sera dans cette fonction sera exécuté en premier (avant que le reste soit prêt)
 func _enter_tree():
 	map = get_tree().get_first_node_in_group("map")
 
 	if map:
+		# Permet de récupérer le signal plus tard pour pouvoir faire spawn les bateaux
 		map.map_generated.connect(_on_map_generated)
 	else:
 		push_error(">>> ERREUR : Aucune carte trouvée dans le groupe 'map' !")
@@ -43,8 +44,9 @@ func spawn_navire(joueur_id: int, position: Vector2):
 
 func _on_map_generated():
 	# Maintenant la carte existe, on peut spawn les navires
-	spawn_navire_random(1)
-	spawn_navire_random(2)
+	for player in joueurs:
+		spawn_navire_random(player)
+	#spawn_navire_random(2)
 
 
 
