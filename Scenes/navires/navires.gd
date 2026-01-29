@@ -35,6 +35,16 @@ var stats_visible := false
 var path := []
 var is_moving := false
 var case_actuelle: Vector2i
+var target_position: Vector2 = Vector2.ZERO  # Position cible du clic
+var show_arrow: bool = false  # Afficher la flèche ou non
+
+# =========================
+# Flèche de déplacement
+@export var arrow_color: Color = Color(1, 1, 0, 1.0)  # Jaune vif
+@export var arrow_outline_color: Color = Color(0, 0, 0, 1.0)  # Contour noir
+@export var arrow_width: float = 12.0  # Doublé
+@export var arrow_head_size: float = 60.0  # Doublé
+@export var arrow_height: float = 100.0  # Hauteur totale de la flèche augmentée
 
 # =========================
 # Référence map
@@ -187,6 +197,9 @@ func _unhandled_input(event: InputEvent) -> void:
 					path = calculer_chemin(case_actuelle, map.monde_vers_case(mouse_pos))
 					if not path.is_empty():
 						is_moving = true
+						target_position = mouse_pos  # Mémoriser la position cible
+						show_arrow = true  # Activer l'affichage de la flèche
+						queue_redraw()  # Forcer le redessin
 						get_viewport().set_input_as_handled()
 
 
@@ -216,6 +229,10 @@ func hide_all_ships_stats():
 # =========================
 # PROCESS
 func _process(delta):
+	# ----- Animation de la flèche -----
+	if show_arrow and is_player_ship:
+		queue_redraw()  # Redessiner en continu pour l'animation
+	
 	# ----- Timer UI stats (pour TOUS les navires) -----
 	if stats_visible:
 		stats_timer -= delta
@@ -236,8 +253,51 @@ func _process(delta):
 			energie = max(energie - 1, 0)
 			if path.is_empty():
 				is_moving = false
+				show_arrow = false  # Cacher la flèche quand on arrive
+				queue_redraw()
 		else:
 			global_position += direction.normalized() * vitesse * delta
+
+
+# =========================
+# DRAW - Dessiner la flèche au-dessus de la case cible
+func _draw():
+	if not show_arrow or not is_player_ship:
+		return
+	# Convertir la position cible en position locale pour le dessin
+	var local_target = target_position - global_position
+	var distance = local_target.length()
+	if distance < 10:  # Si on est très proche, ne pas dessiner
+		return
+	# Animation de pulsation (utiliser le temps)
+	var pulse = sin(Time.get_ticks_msec() * 0.005) * 0.2 + 1.0
+	# Hauteur de la flèche au-dessus de la case
+	var offset_y = -80 + sin(Time.get_ticks_msec() * 0.003) * 15  
+	# Position de base et pointe de la flèche
+	var arrow_base = local_target + Vector2(0, offset_y - arrow_height)
+	var arrow_tip = local_target + Vector2(0, offset_y)
+	# --- CONTOUR NOIR (pour plus de visibilité) ---
+	# Ligne du contour
+	draw_line(arrow_base, arrow_tip, arrow_outline_color, arrow_width + 8)
+	# Tête de flèche (contour)
+	var outline_size = arrow_head_size + 8
+	var left_outline = arrow_tip + Vector2(-outline_size * 0.5, -outline_size * 0.7)
+	var right_outline = arrow_tip + Vector2(outline_size * 0.5, -outline_size * 0.7)
+	var outline_points = PackedVector2Array([arrow_tip, left_outline, right_outline])
+	draw_colored_polygon(outline_points, arrow_outline_color)
+	# --- FLÈCHE PRINCIPALE (jaune) ---
+	# Ligne principale
+	draw_line(arrow_base, arrow_tip, arrow_color, arrow_width * pulse)
+	# Tête de flèche
+	var head_size = arrow_head_size * pulse
+	var left_point = arrow_tip + Vector2(-head_size * 0.5, -head_size * 0.7)
+	var right_point = arrow_tip + Vector2(head_size * 0.5, -head_size * 0.7)
+	var points = PackedVector2Array([arrow_tip, left_point, right_point])
+	draw_colored_polygon(points, arrow_color)
+	# Cercle lumineux à la base de la flèche 
+	var glow_color = Color(arrow_color.r, arrow_color.g, arrow_color.b, 0.3)
+	draw_circle(arrow_base, 16 * pulse, glow_color)
+	draw_circle(arrow_base, 8, arrow_color)
 
 
 # =========================
