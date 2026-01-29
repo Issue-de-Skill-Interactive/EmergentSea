@@ -14,12 +14,12 @@ extends Node
 var navire_scene := preload("res://Scenes/navires/Navires.tscn")
 
 @onready var map := get_tree().get_first_node_in_group("map")
-@onready var listes := get_tree().get_first_node_in_group("Listes_entités")
+@onready var listes := get_tree().get_first_node_in_group("shared_entities")
 
 # Ce qui sera dans cette fonction sera exécuté en premier (avant que le reste soit prêt)
 func _enter_tree():
 	map = get_tree().get_first_node_in_group("map")
-	listes = get_tree().get_first_node_in_group("Listes_entités")
+	listes = get_tree().get_first_node_in_group("shared_entities")
 
 	if map:
 		# Permet de récupérer le signal plus tard pour pouvoir faire spawn les bateaux
