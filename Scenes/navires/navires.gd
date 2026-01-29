@@ -16,8 +16,11 @@ extends Node2D
 @export var nrbequipage: int = 0
 @export var interaction_radius: float = 80.0
 @export var stats_duration: float = 2.5
+@export var tir: int = 10		#Portée d'un tir
+@export var dgt_tir: int = 2	#Dégât d'un tir
 
 @onready var ui_layer: CanvasLayer = get_tree().get_first_node_in_group("ui_layer")
+@onready var listes := get_tree().get_first_node_in_group("Listes_entités")
 
 
 # =========================
@@ -154,9 +157,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_pos := get_global_mouse_position()
 
-		# ===== CLIC DROIT → STATS =====
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			if mouse_pos.distance_to(global_position) <= interaction_radius:
+		# ===== TOUCHE I → STATS =====
+		if event.button_index == KEY_I:		# I comme inventory
+			if stats_visible == false :
 				show_stats()
 			else:
 				hide_stats()
@@ -168,6 +171,13 @@ func _input(event: InputEvent) -> void:
 					path = calculer_chemin(case_actuelle, map.monde_vers_case(mouse_pos))
 					if not path.is_empty():
 						is_moving = true
+
+		# ===== CLIC DROIT → TIR =====
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if energie > 20 :
+				if on_a_ship(map.monde_vers_case(mouse_pos)):
+					if is_on_range(case_actuelle, map.monde_vers_case(mouse_pos), tir):
+						shoot(map.monde_vers_case(mouse_pos))
 
 
 # =========================
@@ -262,9 +272,31 @@ func get_neighbors(c: Vector2i) -> Array:
 			res.append(n)
 	return res
 
+# =========================
+# TIR
+# On va regarder s'il y a la portée, en regardant par rapport à ce que le bateau peut toucher
+func is_on_range(start: Vector2i, goal: Vector2i, limit: int) -> bool :
+	var chemin := calculer_chemin(start, goal)
+	var result := false
+	if len(chemin) < limit :
+		result = true
+	return result
+	
+# On retire les points de vie à quelqu'un qui se fait tirer dessus.
+func shoot(cible: Vector2):
+	for player in listes.joueurs :
+		for bateau in listes.navires[player] :
+			if bateau.global_position == cible and not player == joueur_id :
+				var is_target : Navires = bateau						# sélection du bateau par sa position sur la carte
+				is_target.vie = is_target.vie - dgt_tir		# on retire les dégâts d'un tir à un bateau
 
-
-
+func on_a_ship(cible: Vector2i) -> bool :
+	var result := false
+	for player in listes.joueurs :
+		for bateau in listes.navires[player] :
+			if bateau.global_position == cible and not player == joueur_id :
+				result = true
+	return result
 
 # =========================
 # UTILS

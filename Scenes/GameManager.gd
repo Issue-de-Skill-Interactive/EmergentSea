@@ -13,10 +13,8 @@ extends Node
 # Scène du navire
 var navire_scene := preload("res://Scenes/navires/Navires.tscn")
 
-# Liste des navires créés
-var navires := {}
-
 @onready var map := get_tree().get_first_node_in_group("map")
+@onready var listes := get_tree().get_first_node_in_group("Listes_entités")
 
 # Ce qui sera dans cette fonction sera exécuté en premier (avant que le reste soit prêt)
 func _enter_tree():
@@ -28,14 +26,6 @@ func _enter_tree():
 	else:
 		push_error(">>> ERREUR : Aucune carte trouvée dans le groupe 'map' !")
 
-
-
-# Liste des joueurs (pour le futur multijoueur)
-# au début, un joueur = 1 bateau qui spawn
-var joueurs := {
-	1: { "nom": "Joueur 1", "couleur": Color.BLUE },
-	2: { "nom": "Joueur 2", "couleur": Color.RED }
-}
 
 func _ready():
 	pass # circulez y'a rien à voir
@@ -53,13 +43,13 @@ func spawn_navire(joueur_id: int, position: Vector2):
 	add_child(navire)
 
 	# on enregistre le navire dans un tableau pour plus tard
-	navires[joueur_id] = navire
+	listes.navires[joueur_id] = navire
 
 # cette fonction se déclenche à la réception d'un signal
 # indiquant que la génération de la map est terminée
 func _on_map_generated():
 	# Maintenant la carte existe, on peut faire spawn les navires
-	for player in joueurs:
+	for player in listes.joueurs:
 		# normalement, un bateau spawn par joueur
 		spawn_navire_random(player)
 
