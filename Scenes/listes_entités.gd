@@ -4,7 +4,7 @@ extends Node2D
 @export var navires := {}
 
 # Liste des joueurs
-@export var joueurs := {
+@export var joueurs : Dictionary= {
 	1: { "nom": "Joueur 1", "couleur": Color.BLUE },
 	2: { "nom": "Joueur 2", "couleur": Color.RED }
 }
@@ -15,3 +15,6 @@ func _ready() -> void:
 
 func _enter_tree():
 	add_to_group("shared_entities")
+
+func getPlayerList() -> Dictionary:
+	return joueurs;
