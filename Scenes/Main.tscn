@@ -12,8 +12,12 @@
 [ext_resource type="PackedScene" uid="uid://dbayx8jjgjey2" path="res://Scenes/GameManager.tscn" id="9_vy5pj"]
 [ext_resource type="Script" uid="uid://ddrseokeg42dh" path="res://Scenes/canvas_layer.gd" id="10_bmxlf"]
 [ext_resource type="Script" uid="uid://dhuetiveiynws" path="res://Scenes/navires/navires.gd" id="12_grg3l"]
+[ext_resource type="Script" path="res://Scenes/listes_entités.gd" id="12_grg3l"]
 
 [node name="Main" type="Node2D"]
+
+[node name="shared_entities" type="Node2D" parent="."]
+script = ExtResource("12_grg3l")
 
 [node name="Map" type="Node2D" parent="."]
 script = ExtResource("1_idj7w")

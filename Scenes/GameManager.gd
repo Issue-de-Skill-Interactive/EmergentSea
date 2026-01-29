@@ -12,26 +12,22 @@ extends Node
 # Scène du navire
 var navire_scene := preload("res://Scenes/navires/Navires.tscn")
 
-# Liste des navires créés
-var navires := {}
-
-@onready var map := get_tree().get_first_node_in_group("map")
+@onready var map
+@onready var data
 
 # Ce qui sera dans cette fonction sera exécuté en premier (avant que le reste soit prêt)
 func _enter_tree():
 	map = get_tree().get_first_node_in_group("map")
+	data = get_tree().get_first_node_in_group("shared_entities")
 	if map:
 		# Permet de récupérer le signal plus tard pour pouvoir faire spawn les bateaux
 		map.map_generated.connect(_on_map_generated)
+		if not data:
+			push_error(">>> ERREUR : Aucune donnée partagée n'est accessible !")
+			
 	else:
 		push_error(">>> ERREUR : Aucune carte trouvée dans le groupe 'map' !")
 
-# Liste des joueurs (pour le futur multijoueur)
-# au début, un joueur = 1 bateau qui spawn
-var joueurs := {
-	1: { "nom": "Joueur 1", "couleur": Color.BLUE, "is_player": true },   # Joueur humain
-	2: { "nom": "Joueur 2", "couleur": Color.RED, "is_player": false }     # Ennemi (immobile)
-}
 
 func _ready():
 	pass # circulez y'a rien à voir
@@ -54,15 +50,18 @@ func spawn_navire(joueur_id: int, position: Vector2, is_player: bool = false):
 	navire.add_to_group("ships")
 	
 	# on enregistre le navire dans un tableau pour plus tard
-	navires[joueur_id] = navire
+	data.navires[joueur_id] = navire
 	
 	print(">>> Navire créé pour joueur ", joueur_id, " (Joueur: ", is_player, ") à position ", position)
+
 
 # cette fonction se déclenche à la réception d'un signal
 # indiquant que la génération de la map est terminée
 func _on_map_generated():
 	# Maintenant la carte existe, on peut faire spawn les navires
-	for player_id in joueurs:
+
+	var joueurs = data.getPlayerList()
+  for player_id in joueurs:
 		# Récupérer si c'est un joueur humain ou un ennemi
 		var is_player = joueurs[player_id].get("is_player", false)
 		# normalement, un bateau spawn par joueur
