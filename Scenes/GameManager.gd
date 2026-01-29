@@ -19,6 +19,7 @@ var navire_scene := preload("res://Scenes/navires/Navires.tscn")
 # Ce qui sera dans cette fonction sera exécuté en premier (avant que le reste soit prêt)
 func _enter_tree():
 	map = get_tree().get_first_node_in_group("map")
+	listes = get_tree().get_first_node_in_group("Listes_entités")
 
 	if map:
 		# Permet de récupérer le signal plus tard pour pouvoir faire spawn les bateaux

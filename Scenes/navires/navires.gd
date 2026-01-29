@@ -290,6 +290,7 @@ func shoot(cible: Vector2):
 				var is_target : Navires = bateau						# sélection du bateau par sa position sur la carte
 				is_target.vie = is_target.vie - dgt_tir		# on retire les dégâts d'un tir à un bateau
 
+# On vérifie la présence d'un bateau adverse sur la case ciblée.
 func on_a_ship(cible: Vector2i) -> bool :
 	var result := false
 	for player in listes.joueurs :

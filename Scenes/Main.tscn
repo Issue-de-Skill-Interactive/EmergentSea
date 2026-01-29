@@ -35,5 +35,5 @@ script = ExtResource("9_4kpch")
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 script = ExtResource("10_bmxlf")
 
-[node name="Listes_entités" type="Node2D" parent="."]
+[node name="shared_entities" type="Node2D" parent="."]
 script = ExtResource("12_grg3l")
