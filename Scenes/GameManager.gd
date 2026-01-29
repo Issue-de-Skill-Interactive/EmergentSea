@@ -50,7 +50,7 @@ func spawn_navire(joueur_id: int, position: Vector2, is_player: bool = false):
 	navire.add_to_group("ships")
 	
 	# on enregistre le navire dans un tableau pour plus tard
-	data.navires[joueur_id] = navire
+	data.liste_navires[joueur_id] = navire
 	
 	print(">>> Navire créé pour joueur ", joueur_id, " (Joueur: ", is_player, ") à position ", position)
 
@@ -61,7 +61,7 @@ func _on_map_generated():
 	# Maintenant la carte existe, on peut faire spawn les navires
 
 	var joueurs = data.getPlayerList()
-  for player_id in joueurs:
+	for player_id in joueurs:
 		# Récupérer si c'est un joueur humain ou un ennemi
 		var is_player = joueurs[player_id].get("is_player", false)
 		# normalement, un bateau spawn par joueur
@@ -81,7 +81,7 @@ func spawn_navire_at(joueur_id: int, case_pos: Vector2i, is_player: bool = false
 
 # Fonction pour obtenir le navire du joueur
 func get_player_ship():
-	for navire in navires.values():
+	for navire in data.navires.values():
 		if navire.is_player_ship:
 			return navire
 	return null
@@ -89,7 +89,7 @@ func get_player_ship():
 # Fonction pour obtenir tous les navires ennemis
 func get_enemy_ships() -> Array:
 	var enemies := []
-	for navire in navires.values():
+	for navire in data.navires.values():
 		if not navire.is_player_ship:
 			enemies.append(navire)
 	return enemies

@@ -11,9 +11,7 @@
 [ext_resource type="Script" uid="uid://rf6kb04x4h4v" path="res://Scenes/camera_2d.gd" id="9_4kpch"]
 [ext_resource type="PackedScene" uid="uid://dbayx8jjgjey2" path="res://Scenes/GameManager.tscn" id="9_vy5pj"]
 [ext_resource type="Script" uid="uid://ddrseokeg42dh" path="res://Scenes/canvas_layer.gd" id="10_bmxlf"]
-[ext_resource type="Script" uid="uid://dhuetiveiynws" path="res://Scenes/navires/navires.gd" id="12_grg3l"]
-
-[ext_resource type="Script" path="res://Scenes/listes_entités.gd" id="12_grg3l"]
+[ext_resource type="Script" uid="uid://dr8py3hemabaj" path="res://Scenes/listes_entités.gd" id="12_grg3l"]
 
 [node name="Main" type="Node2D"]
 
