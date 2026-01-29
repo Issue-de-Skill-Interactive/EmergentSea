@@ -177,6 +177,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not is_player_ship:
 		return
 	
+	# pour setup ça : Projet/Paramètres du projet/Controles
+	if Input.is_action_just_pressed("toggle_stats") and is_player_ship:
+		if not stats_visible:
+			show_stats()
+		else:
+			hide_all_ships_stats()
+	
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_pos := get_global_mouse_position()
 
@@ -192,16 +199,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		#else:
 				## Cacher toutes les stats si on clique ailleurs
 				#hide_all_ships_stats()
-		# ===== TOUCHE I → STATS =====
-		if event.button_index == KEY_I:		# I comme inventory
-			if stats_visible == false :
-				show_stats()
-			else:
-				# Cacher toutes les stats si on clique ailleurs
-				hide_all_ships_stats()
+		
 
 		# ===== CLIC GAUCHE → DÉPLACEMENT =====
-		elif event.button_index == MOUSE_BUTTON_LEFT:
+		if event.button_index == MOUSE_BUTTON_LEFT:
 			if energie > 0 and not is_moving:
 				if map.is_on_water(mouse_pos):
 					path = calculer_chemin(case_actuelle, map.monde_vers_case(mouse_pos))
@@ -247,6 +248,9 @@ func hide_all_ships_stats():
 # =========================
 # PROCESS
 func _process(delta):
+	
+	
+	
 	# ----- Animation de la flèche -----
 	if show_arrow and is_player_ship:
 		queue_redraw()  # Redessiner en continu pour l'animation

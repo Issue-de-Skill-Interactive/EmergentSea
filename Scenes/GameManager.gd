@@ -50,7 +50,7 @@ func spawn_navire(joueur_id: int, position: Vector2, is_player: bool = false):
 	navire.add_to_group("ships")
 	
 	# on enregistre le navire dans un tableau pour plus tard
-	data.liste_navires[joueur_id] = navire
+	data.addNavireToData(navire)
 	
 	print(">>> Navire créé pour joueur ", joueur_id, " (Joueur: ", is_player, ") à position ", position)
 

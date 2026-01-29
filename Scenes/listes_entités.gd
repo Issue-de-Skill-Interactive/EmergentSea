@@ -1,7 +1,7 @@
 extends Node2D
 
 # Liste des navires créés
-@export var liste_navires : Dictionary= {}
+@export var liste_navires : Dictionary[int, Navires]= {}
 
 # Liste des joueurs
 @export var liste_joueurs : Dictionary= {
@@ -29,3 +29,16 @@ func getNavireByPosition(pos:Vector2i) -> Array:
 				found.append(ship)
 			
 	return found
+
+func addNavireToData(ship : Navires) -> bool:
+	var tmp_seed :int = (ship.joueur_id + ship.global_position.length())/ship.global_position.angle()
+	var rand_int : = rand_from_seed(tmp_seed)
+	for uuid in rand_int:
+		if(not liste_navires.has(uuid)):
+			liste_navires[uuid] = ship
+			return true
+	return false
+
+	
+	
+	
