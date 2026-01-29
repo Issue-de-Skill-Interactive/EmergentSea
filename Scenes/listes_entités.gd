@@ -1,7 +1,7 @@
 extends Node2D
 
 # Liste des navires créés
-@export var liste_navires := {}
+@export var liste_navires : Dictionary= {}
 
 # Liste des joueurs
 @export var liste_joueurs : Dictionary= {
@@ -18,3 +18,14 @@ func _enter_tree():
 
 func getPlayerList() -> Dictionary:
 	return liste_joueurs;
+
+# permet de récupérer la liste des navires sur une case précise
+func getNavireByPosition(pos:Vector2i) -> Array:
+	# liste des navires trouvés
+	var found : Array
+	if(not liste_navires.is_empty()):
+		for ship in liste_navires.values():
+			if(ship.getPosition()):
+				found.append(ship)
+			
+	return found

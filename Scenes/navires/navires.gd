@@ -406,18 +406,33 @@ func is_on_range(start: Vector2i, goal: Vector2i, limit: int) -> bool :
 	
 # On retire les points de vie à quelqu'un qui se fait tirer dessus.
 func shoot(cible: Vector2):
-	for player in data.liste_joueurs :
-		for bateau in data.liste_navires :
-			if bateau.global_position == cible and not player == joueur_id :
-				var is_target : Navires = bateau	# sélection du bateau par sa position sur la carte
-				is_target.vie = is_target.vie - dgt_tir 	# on retire les dégâts d'un tir à un bateau
+	# on convertit les coordonnées en coordonnées de cases
+	var case_cible : Vector2i = map.monde_vers_case(cible)
+	# on récupère la liste des bateaux qui sont sur cette position
+	var ships_on_pos: Array =data.getNavireByPosition(cible)
+	# on vérifie si il y a au moins un bateau dans la liste
+	if(not ships_on_pos.is_empty()):
+		# pour chaque bateau dans cette liste,
+		for bateau in ships_on_pos:
+			# on regarde si le bateau n'est pas celui du joueur
+			if(bateau.joueur_id != self.joueur_id):
+				# si le bateau n'est pas celui du joueur, alors on peut tirer
+				#TODO : mieux gérer la façon dont les dégâts sont infligés (avec une méthode c'est mieux, histoire de gérer le cas vie <= 0)
+				bateau.vie -= dgt_tir # vie du bateau - les dégâts = vie après attaque
 
 # On vérifie la présence d'un bateau adverse sur la case ciblée.
+#TODO: renommer la fonction parce que c'est pas terrible
 func on_a_ship(cible: Vector2i) -> bool :
 	var result := false
-	for player in data.liste_joueurs :
-		for bateau in data.liste_navires :
-			if bateau.global_position == cible and not player == joueur_id :
+	# on récupère la liste des bateaux qui sont sur cette position
+	var ships_on_pos: Array =data.getNavireByPosition(cible)
+	# on vérifie si il y a au moins un bateau dans la liste
+	if(not ships_on_pos.is_empty()):
+		# pour chaque bateau dans cette liste,
+		for bateau in ships_on_pos:
+			# on regarde si le bateau n'est pas celui du joueur
+			if(bateau.joueur_id != self.joueur_id):
+				# si le bateau n'est pas celui du joueur, alors on peut tirer
 				result = true
 	return result
 
@@ -428,3 +443,7 @@ func reset_energie():
 
 func heal(amount: int):
 	vie = min(vie + amount, maxvie)
+
+#permet d'obtenir la position du bateau
+func getPosition() -> Vector2i:
+	return case_actuelle
