@@ -5,8 +5,8 @@ extends Node2D
 
 # Liste des joueurs
 @export var joueurs : Dictionary= {
-	1: { "nom": "Joueur 1", "couleur": Color.BLUE },
-	2: { "nom": "Joueur 2", "couleur": Color.RED }
+	1: { "nom": "Joueur 1", "couleur": Color.BLUE, "is_player": true },   # Joueur humain
+	2: { "nom": "Joueur 2", "couleur": Color.RED, "is_player": false }     # Ennemi (immobile)
 }
 
 # Called when the node enters the scene tree for the first time.
