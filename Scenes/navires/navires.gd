@@ -423,6 +423,8 @@ func shoot(cible: Vector2):
 				# si le bateau n'est pas celui du joueur, alors on peut tirer
 				#TODO : mieux gérer la façon dont les dégâts sont infligés (avec une méthode c'est mieux, histoire de gérer le cas vie <= 0)
 				bateau.vie -= dgt_tir # vie du bateau - les dégâts = vie après attaque
+				bateau.show_stats()
+				
 
 # On vérifie la présence d'un bateau adverse sur la case ciblée.
 #TODO: renommer la fonction parce que c'est pas terrible
@@ -439,6 +441,7 @@ func on_a_ship(cible: Vector2i) -> bool :
 				# si le bateau n'est pas celui du joueur, alors on peut tirer
 				result = true
 	return result
+
 
 # =========================
 # UTILS
