@@ -177,6 +177,7 @@ func _init_stats_ui():
 	vie_label = Label.new()
 	energie_label = Label.new()
 	nourriture_label = Label.new()
+	equipage_label = Label.new()
 	nourriture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vie_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	energie_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -233,7 +234,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		
 
 		# ===== CLIC GAUCHE → DÉPLACEMENT =====
-		elif event.button_index == MOUSE_BUTTON_LEFT:
+		if event.button_index == MOUSE_BUTTON_LEFT:
 			if energie > 0 and not is_moving and not is_fishing:
 				if map.is_on_water(mouse_pos):
 					path = calculer_chemin(case_actuelle, map.monde_vers_case(mouse_pos))
