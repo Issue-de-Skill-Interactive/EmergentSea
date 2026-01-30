@@ -8,6 +8,16 @@ extends Node2D
 @export var is_player_ship: bool = false  # NOUVEAU : Détermine si c'est le navire du joueur
 
 # =========================
+# Textures
+
+@export var rendu0: Texture2D
+@export var rendu60: Texture2D
+@export var rendu120: Texture2D
+@export var rendu180: Texture2D
+@export var rendu240: Texture2D
+@export var rendu300: Texture2D
+
+
 # Stats
 @export var vie: int = 10
 @export var maxvie: int = 10
