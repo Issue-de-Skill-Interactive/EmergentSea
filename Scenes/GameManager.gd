@@ -60,9 +60,7 @@ func spawn_navire(joueur_id: int, position: Vector2, is_player: bool = false):
 # cette fonction se déclenche à la réception d'un signal
 # indiquant que la génération de la map est terminée
 func _on_map_generated():
-	map = map_manager.map_gen
 	# Maintenant la carte existe, on peut faire spawn les navires
-
 	var joueurs = data.getPlayerList()
 	for player_id in joueurs:
 		# Récupérer si c'est un joueur humain ou un ennemi
@@ -73,7 +71,7 @@ func _on_map_generated():
 # permet de faire spawn le bateau à une position aléatoire
 func spawn_navire_random(joueur_id: int, is_player: bool = false):
 	# on prend une tuile navigable au hasard
-	var pos = map.get_random_ocean_position()
+	var pos = Map_utils.get_random_ocean_position()
 	# et on y met le bateau
 	spawn_navire(joueur_id, pos, is_player)
 

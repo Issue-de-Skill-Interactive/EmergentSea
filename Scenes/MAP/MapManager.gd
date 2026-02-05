@@ -6,13 +6,12 @@ extends Node
 signal map_generated
 
 @export var map_gen : Map_gen
-@export var map_data : Map_data
 @export var map_utils : Map_utils
 
 func _enter_tree():
 	add_to_group("Map_manager")
 	
-	map_data = Map_data.new()
+	Map_data.new()
 	map_gen = Map_gen.new()
 	map_utils = Map_utils.new()
 	add_child(map_gen)
@@ -33,20 +32,20 @@ func _ready():
 # Rendering
 # =========================
 func render_map():
-	for y in range(map_data.map_height):
-		for x in range(map_data.map_width):
-			spawn_tile(map_gen.tiles[y][x], x, y)
+	for y in range(Map_data.map_height):
+		for x in range(Map_data.map_width):
+			spawn_tile(Map_data.tiles[y][x], x, y)
 
 func spawn_tile(t: String, q: int, r: int):
 	var s := Sprite2D.new()
 
 	match t:
-		"deepwater": s.texture = map_data.TileDeepWater
-		"water": s.texture = map_data.TileWater
-		"sand": s.texture = map_data.TileSand
-		"earth": s.texture = map_data.TileEarth
-		"forest": s.texture = map_data.TileForest
-		"mountain": s.texture = map_data.TileMountain
+		"deepwater": s.texture = Map_data.TileDeepWater
+		"water": s.texture = Map_data.TileWater
+		"sand": s.texture = Map_data.TileSand
+		"earth": s.texture = Map_data.TileEarth
+		"forest": s.texture = Map_data.TileForest
+		"mountain": s.texture = Map_data.TileMountain
 
-	s.position = map_gen.hex_to_pixel_iso(q, r)
+	s.position = Map_utils.hex_to_pixel_iso(q, r)
 	add_child(s)
