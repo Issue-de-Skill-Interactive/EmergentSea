@@ -23,15 +23,16 @@ func getPlayerList() -> Dictionary:
 func getNavireByPosition(pos:Vector2i) -> Array:
 	# liste des navires trouvés
 	var found : Array
+	print(pos)
 	if(not liste_navires.is_empty()):
 		for ship in liste_navires.values():
-			if(ship.getPosition()):
+			if(ship.getPosition()==pos):
 				found.append(ship)
 			
 	return found
 
 func addNavireToData(ship : Navires) -> bool:
-	var tmp_seed :int = (ship.joueur_id + ship.global_position.length())/ship.global_position.angle()
+	var tmp_seed :int = int((ship.joueur_id + ship.global_position.length())/ship.global_position.angle())
 	var rand_int : = rand_from_seed(tmp_seed)
 	for uuid in rand_int:
 		if(not liste_navires.has(uuid)):

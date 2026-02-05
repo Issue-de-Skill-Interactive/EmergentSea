@@ -1,6 +1,9 @@
 class_name Navires
 extends Node2D
 
+# Permettra de signaler au moteurs différents évènements
+signal sig_show_stats
+
 # =========================
 # ID
 @export var id: int = 0
@@ -80,13 +83,12 @@ var show_arrow: bool = false  # Afficher la flèche ou non
 @export var arrow_height: float = 100.0  # Hauteur totale de la flèche augmentée
 
 # =========================
-# Référence map
-@onready var map: Node2D = get_tree().get_first_node_in_group("map") as Node2D
-
-# =========================
 # Caméra (optionnelle)
 @onready var camera: Camera2D = get_node_or_null("Camera2D")
 
+
+func _init() -> void:
+	pass
 
 # =========================
 # READY
@@ -99,12 +101,7 @@ func _ready():
 	# - global_position est correct
 	await get_tree().process_frame
 	
-	# Vérifier que la map existe
-	if not map:
-		push_error("ERREUR : Aucune map trouvée pour le navire!")
-		return
-		
-	case_actuelle = map.monde_vers_case(global_position)
+	case_actuelle = Map_utils.monde_vers_case(global_position)
 
 	# ---------- Caméra ----------
 	# Trouver la caméra indépendante (système existant)
@@ -121,14 +118,14 @@ func _ready():
 		set_process_input(true)
 		set_process_unhandled_input(true)
 		
-		print(">>> Navire JOUEUR initialisé à position ", global_position)
+		print(">>> Navire JOUEUR initialisé à position ", Map_utils.monde_vers_case(global_position))
 	else:
 		# NAVIRE ENNEMI
 		# Désactiver complètement les inputs
 		set_process_input(false)
 		set_process_unhandled_input(false)
 		
-		print(">>> Navire ENNEMI initialisé à position ", global_position)
+		print(">>> Navire ENNEMI initialisé à position ", Map_utils.monde_vers_case(global_position))
 
 	# ---------- UI STATS (pour TOUS les navires) ----------
 	if ui_layer:
@@ -216,6 +213,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	
 	# pour setup ça : Projet/Paramètres du projet/Controles
 	if Input.is_action_just_pressed("toggle_stats") and is_player_ship:
+		emit_signal("sig_show_stats")
 		if not stats_visible:
 			show_stats()
 		else:
@@ -246,8 +244,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		# ===== CLIC GAUCHE → DÉPLACEMENT =====
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if energie > 0 and not is_moving and not is_fishing:
-				if map.is_on_water(mouse_pos):
-					path = calculer_chemin(case_actuelle, map.monde_vers_case(mouse_pos))
+				if Map_utils.is_on_water(mouse_pos):
+					path = calculer_chemin(case_actuelle, Map_utils.monde_vers_case(mouse_pos))
 					if not path.is_empty():
 						is_moving = true
 						target_position = mouse_pos  # Mémoriser la position cible
@@ -257,9 +255,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		# ===== CLIC DROIT → TIR =====
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			if energie > 20 :
-				if on_a_ship(map.monde_vers_case(mouse_pos)):
-					if is_on_range(case_actuelle, map.monde_vers_case(mouse_pos), tir):
-						shoot(map.monde_vers_case(mouse_pos))
+				if on_a_ship(Map_utils.monde_vers_case(mouse_pos)):
+					if is_on_range(case_actuelle, Map_utils.monde_vers_case(mouse_pos), tir):
+						shoot(Map_utils.monde_vers_case(mouse_pos))
 
 
 # =========================
@@ -311,7 +309,7 @@ func _process(delta):
 	# ----- Déplacement (SEULEMENT pour le navire joueur - les ennemis sont immobiles) -----
 	if is_player_ship and is_moving and not path.is_empty():
 		var next_case = path[0]
-		var next_pos: Vector2 = map.case_vers_monde(next_case)
+		var next_pos: Vector2 = Map_utils.case_vers_monde(next_case)
 		var direction := next_pos - global_position
 
 		if direction.length() < 5:
@@ -417,7 +415,7 @@ func try_start_fishing() -> void:
 		return
 
 	# Condition de terrain : uniquement sur l'eau
-	if not map.is_on_water(global_position):
+	if not Map_utils.is_on_water(global_position):
 		return
 
 	# Déclenchement
@@ -498,7 +496,7 @@ func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
 			return result
 
 		for neighbor in get_neighbors(current):
-			if not map.is_on_water(map.case_vers_monde(neighbor)):
+			if not Map_utils.is_on_water(Map_utils.case_vers_monde(neighbor)):
 				continue
 
 			var tentative = g_score[current] + 1
@@ -522,7 +520,7 @@ func get_neighbors(c: Vector2i) -> Array:
 	var res := []
 	for d in dirs:
 		var n = c + d
-		if n.x >= 0 and n.y >= 0 and n.x < map.map_width and n.y < map.map_height:
+		if n.x >= 0 and n.y >= 0 and n.x < Map_data.map_width and n.y < Map_data.map_height:
 			res.append(n)
 	return res
 
@@ -539,9 +537,9 @@ func is_on_range(start: Vector2i, goal: Vector2i, limit: int) -> bool :
 # On retire les points de vie à quelqu'un qui se fait tirer dessus.
 func shoot(cible: Vector2):
 	# on convertit les coordonnées en coordonnées de cases
-	var case_cible : Vector2i = map.monde_vers_case(cible)
+	var case_cible : Vector2i = Map_utils.monde_vers_case(cible)
 	# on récupère la liste des bateaux qui sont sur cette position
-	var ships_on_pos: Array =data.getNavireByPosition(cible)
+	var ships_on_pos: Array =data.getNavireByPosition(case_cible)
 	# on vérifie si il y a au moins un bateau dans la liste
 	if(not ships_on_pos.is_empty()):
 		# pour chaque bateau dans cette liste,

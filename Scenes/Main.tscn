@@ -1,17 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://ertxm6ey6fes"]
+[gd_scene load_steps=6 format=3 uid="uid://ertxm6ey6fes"]
 
-[ext_resource type="Script" uid="uid://i830ncncgvsu" path="res://Scenes/map.gd" id="1_idj7w"]
-[ext_resource type="Texture2D" uid="uid://cf1sj0he3ww2d" path="res://Scenes/TileWater.png" id="2_50glp"]
-[ext_resource type="PackedScene" uid="uid://cfhs5uyx5g4go" path="res://Scenes/navires/Navires.tscn" id="2_kln2b"]
-[ext_resource type="Texture2D" uid="uid://dl8vuyfby44lh" path="res://Scenes/TileDeepWater.png" id="3_vy5pj"]
-[ext_resource type="Texture2D" uid="uid://cp27s2qmg31aa" path="res://Scenes/TileSand.png" id="4_bmxlf"]
-[ext_resource type="Texture2D" uid="uid://dykacfjgni06m" path="res://Scenes/TileEarth.png" id="5_4kpch"]
-[ext_resource type="Texture2D" uid="uid://b7sd3takqslt2" path="res://Scenes/TileForest.png" id="6_grg3l"]
-[ext_resource type="Texture2D" uid="uid://bn4m5o2hjrd2v" path="res://Scenes/TileMountain.png" id="7_frkhe"]
-[ext_resource type="Script" uid="uid://rf6kb04x4h4v" path="res://Scenes/camera_2d.gd" id="9_4kpch"]
+[ext_resource type="Script" uid="uid://b8oifcgwrg2r" path="res://Scenes/MAP/MapManager.gd" id="2_v1gob"]
+[ext_resource type="Script" uid="uid://rf6kb04x4h4v" path="res://Scenes/CAMERA/camera_2d.gd" id="9_4kpch"]
 [ext_resource type="PackedScene" uid="uid://dbayx8jjgjey2" path="res://Scenes/GameManager.tscn" id="9_vy5pj"]
-[ext_resource type="Script" uid="uid://ddrseokeg42dh" path="res://Scenes/canvas_layer.gd" id="10_bmxlf"]
-[ext_resource type="Script" path="res://Scenes/listes_entités.gd" id="12_grg3l"]
+[ext_resource type="Script" uid="uid://ddrseokeg42dh" path="res://Scenes/UI/canvas_layer.gd" id="10_bmxlf"]
+[ext_resource type="Script" uid="uid://dr8py3hemabaj" path="res://Scenes/DATA/listes_entités.gd" id="12_grg3l"]
 
 [node name="Main" type="Node2D"]
 
@@ -19,16 +12,7 @@
 script = ExtResource("12_grg3l")
 
 [node name="Map" type="Node2D" parent="."]
-script = ExtResource("1_idj7w")
-TileWater = ExtResource("2_50glp")
-TileDeepWater = ExtResource("3_vy5pj")
-TileSand = ExtResource("4_bmxlf")
-TileEarth = ExtResource("5_4kpch")
-TileForest = ExtResource("6_grg3l")
-TileMountain = ExtResource("7_frkhe")
-
-[node name="Navires" parent="." instance=ExtResource("2_kln2b")]
-script = null
+script = ExtResource("2_v1gob")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("9_4kpch")
@@ -39,4 +23,3 @@ script = ExtResource("9_4kpch")
 script = ExtResource("10_bmxlf")
 
 [node name="Naviresenemie" type="Node2D" parent="."]
-script = ExtResource("12_grg3l")

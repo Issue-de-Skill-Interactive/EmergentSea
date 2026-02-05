@@ -14,14 +14,16 @@ var navire_scene := preload("res://Scenes/navires/Navires.tscn")
 
 @onready var map
 @onready var data
+@onready var map_manager
 
 # Ce qui sera dans cette fonction sera exécuté en premier (avant que le reste soit prêt)
 func _enter_tree():
-	map = get_tree().get_first_node_in_group("map")
+	
+	map_manager = get_tree().get_first_node_in_group("Map_manager")
 	data = get_tree().get_first_node_in_group("shared_entities")
-	if map:
+	if map_manager:
 		# Permet de récupérer le signal plus tard pour pouvoir faire spawn les bateaux
-		map.map_generated.connect(_on_map_generated)
+		map_manager.map_generated.connect(_on_map_generated)
 		if not data:
 			push_error(">>> ERREUR : Aucune donnée partagée n'est accessible !")
 			
@@ -59,7 +61,6 @@ func spawn_navire(joueur_id: int, position: Vector2, is_player: bool = false):
 # indiquant que la génération de la map est terminée
 func _on_map_generated():
 	# Maintenant la carte existe, on peut faire spawn les navires
-
 	var joueurs = data.getPlayerList()
 	for player_id in joueurs:
 		# Récupérer si c'est un joueur humain ou un ennemi
@@ -70,7 +71,7 @@ func _on_map_generated():
 # permet de faire spawn le bateau à une position aléatoire
 func spawn_navire_random(joueur_id: int, is_player: bool = false):
 	# on prend une tuile navigable au hasard
-	var pos = map.get_random_ocean_position()
+	var pos = Map_utils.get_random_ocean_position()
 	# et on y met le bateau
 	spawn_navire(joueur_id, pos, is_player)
 

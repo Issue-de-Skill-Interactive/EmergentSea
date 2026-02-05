@@ -8,7 +8,7 @@ func rebind_action(action_name: String, new_keycode: int):
 	InputMap.action_erase_events(action_name)
 
 	# On crée un nouvel InputEventKey
-	var ev := InputEventKey.new()
+	var ev :InputEventKey= InputEventKey.new()
 	ev.keycode = new_keycode
 
 	# On l’ajoute à l’action
