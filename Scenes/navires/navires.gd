@@ -1,6 +1,9 @@
 class_name Navires
 extends Node2D
 
+# Permettra de signaler au moteurs différents évènements
+signal sig_show_stats
+
 # =========================
 # ID
 @export var id: int = 0
@@ -216,6 +219,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	
 	# pour setup ça : Projet/Paramètres du projet/Controles
 	if Input.is_action_just_pressed("toggle_stats") and is_player_ship:
+		emit_signal("sig_show_stats")
 		if not stats_visible:
 			show_stats()
 		else:
