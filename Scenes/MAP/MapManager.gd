@@ -7,17 +7,14 @@ signal map_generated
 
 @export var map_gen : Map_gen
 @export var map_data : Map_data
-@onready var map_utils
+@export var map_utils : Map_utils
 
 func _enter_tree():
 	add_to_group("Map_manager")
 	
 	map_data = Map_data.new()
-	map_gen = Map_gen.new({
-		"map_data"=map_data
-	})
-	
-	map_gen.map_data = map_data
+	map_gen = Map_gen.new()
+	map_utils = Map_utils.new()
 	add_child(map_gen)
 	
 func _ready():
