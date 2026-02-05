@@ -1,6 +1,5 @@
-[gd_scene load_steps=7 format=3 uid="uid://ertxm6ey6fes"]
+[gd_scene load_steps=6 format=3 uid="uid://ertxm6ey6fes"]
 
-[ext_resource type="PackedScene" uid="uid://cfhs5uyx5g4go" path="res://Scenes/navires/Navires.tscn" id="2_kln2b"]
 [ext_resource type="Script" uid="uid://b8oifcgwrg2r" path="res://Scenes/MAP/MapManager.gd" id="2_v1gob"]
 [ext_resource type="Script" uid="uid://rf6kb04x4h4v" path="res://Scenes/CAMERA/camera_2d.gd" id="9_4kpch"]
 [ext_resource type="PackedScene" uid="uid://dbayx8jjgjey2" path="res://Scenes/GameManager.tscn" id="9_vy5pj"]
@@ -15,9 +14,6 @@ script = ExtResource("12_grg3l")
 [node name="Map" type="Node2D" parent="."]
 script = ExtResource("2_v1gob")
 
-[node name="Navires" parent="." instance=ExtResource("2_kln2b")]
-script = null
-
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("9_4kpch")
 
@@ -27,4 +23,3 @@ script = ExtResource("9_4kpch")
 script = ExtResource("10_bmxlf")
 
 [node name="Naviresenemie" type="Node2D" parent="."]
-script = ExtResource("12_grg3l")

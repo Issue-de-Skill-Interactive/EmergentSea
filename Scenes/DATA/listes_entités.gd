@@ -23,6 +23,7 @@ func getPlayerList() -> Dictionary:
 func getNavireByPosition(pos:Vector2i) -> Array:
 	# liste des navires trouvés
 	var found : Array
+	print(pos)
 	if(not liste_navires.is_empty()):
 		for ship in liste_navires.values():
 			if(ship.getPosition()==pos):

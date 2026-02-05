@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://cfhs5uyx5g4go"]
 
 [ext_resource type="Script" uid="uid://dhuetiveiynws" path="res://Scenes/navires/navires.gd" id="1_32h2o"]
-[ext_resource type="Texture2D" uid="uid://crlpm3p0o0jqe" path="res://Scenes/navires/rendu0.png" id="2_32h2o"]
+[ext_resource type="Texture2D" uid="uid://bvbc4bmvb33wm" path="res://Scenes/navires/rendu0.png" id="2_32h2o"]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource("1_32h2o")

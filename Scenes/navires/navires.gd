@@ -87,6 +87,9 @@ var show_arrow: bool = false  # Afficher la flèche ou non
 @onready var camera: Camera2D = get_node_or_null("Camera2D")
 
 
+func _init() -> void:
+	pass
+
 # =========================
 # READY
 # =========================
@@ -115,14 +118,14 @@ func _ready():
 		set_process_input(true)
 		set_process_unhandled_input(true)
 		
-		print(">>> Navire JOUEUR initialisé à position ", global_position)
+		print(">>> Navire JOUEUR initialisé à position ", Map_utils.monde_vers_case(global_position))
 	else:
 		# NAVIRE ENNEMI
 		# Désactiver complètement les inputs
 		set_process_input(false)
 		set_process_unhandled_input(false)
 		
-		print(">>> Navire ENNEMI initialisé à position ", global_position)
+		print(">>> Navire ENNEMI initialisé à position ", Map_utils.monde_vers_case(global_position))
 
 	# ---------- UI STATS (pour TOUS les navires) ----------
 	if ui_layer:
