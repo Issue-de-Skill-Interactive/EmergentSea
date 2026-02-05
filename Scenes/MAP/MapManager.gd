@@ -24,12 +24,17 @@ func _ready():
 	await get_tree().process_frame
 	var is_map_gen = map_gen.generate()
 	if(is_map_gen):
-		#render_map()
-		#permet de signaler au moteur que la map est générée
 		print(">>> Map générée")
+		render_map()
+		print(">>> Rendu de la map effectué")
+		#permet de signaler au moteur que la map est générée
 		emit_signal("map_generated")
 	pass
 
+
+# =========================
+# Rendering
+# =========================
 func render_map():
 	for y in range(map_data.map_height):
 		for x in range(map_data.map_width):

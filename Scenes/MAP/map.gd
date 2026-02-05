@@ -43,7 +43,6 @@ func generate()-> bool:
 	generate_island_centers()
 	generate_islands()
 	generate_tiles()
-	render_tiles()
 	compute_ocean_cases()
 	return true
 	
@@ -157,28 +156,6 @@ func generate_tiles():
 			else:
 				tiles[y][x] = "mountain"
 
-# =========================
-# Rendering
-# =========================
-func render_tiles():
-	for y in range(map_data.map_height):
-		for x in range(map_data.map_width):
-			spawn_tile(tiles[y][x], x, y)
-
-func spawn_tile(t: String, q: int, r: int):
-	var s := Sprite2D.new()
-
-	match t:
-		"deepwater": s.texture = map_data.TileDeepWater
-		"water": s.texture = map_data.TileWater
-		"sand": s.texture = map_data.TileSand
-		"earth": s.texture = map_data.TileEarth
-		"forest": s.texture = map_data.TileForest
-		"mountain": s.texture = map_data.TileMountain
-	if s.texture == null:
-		print("❌ Texture manquante pour :", t)
-	s.position = hex_to_pixel_iso(q, r)
-	add_child(s)
 
 # =========================
 # Hex → Iso conversion
