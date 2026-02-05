@@ -85,6 +85,7 @@ var show_arrow: bool = false  # Afficher la flèche ou non
 # =========================
 # Référence map
 @onready var map: Node2D = get_tree().get_first_node_in_group("map") as Node2D
+@onready var map_data: Map_data
 
 # =========================
 # Caméra (optionnelle)
@@ -101,12 +102,15 @@ func _ready():
 	# - le GameManager a placé le navire
 	# - global_position est correct
 	await get_tree().process_frame
-	
+	map_data = get_tree().get_first_node_in_group("Map_manager").map_data
 	# Vérifier que la map existe
 	if not map:
 		push_error("ERREUR : Aucune map trouvée pour le navire!")
 		return
-		
+	if not map_data:
+		push_error("ERREUR : Aucune map_data trouvée pour le navire!")
+		return
+	
 	case_actuelle = map.monde_vers_case(global_position)
 
 	# ---------- Caméra ----------
@@ -526,7 +530,7 @@ func get_neighbors(c: Vector2i) -> Array:
 	var res := []
 	for d in dirs:
 		var n = c + d
-		if n.x >= 0 and n.y >= 0 and n.x < map.map_width and n.y < map.map_height:
+		if n.x >= 0 and n.y >= 0 and n.x < map_data.map_width and n.y < map_data.map_height:
 			res.append(n)
 	return res
 
@@ -545,7 +549,7 @@ func shoot(cible: Vector2):
 	# on convertit les coordonnées en coordonnées de cases
 	var case_cible : Vector2i = map.monde_vers_case(cible)
 	# on récupère la liste des bateaux qui sont sur cette position
-	var ships_on_pos: Array =data.getNavireByPosition(cible)
+	var ships_on_pos: Array =data.getNavireByPosition(case_cible)
 	# on vérifie si il y a au moins un bateau dans la liste
 	if(not ships_on_pos.is_empty()):
 		# pour chaque bateau dans cette liste,

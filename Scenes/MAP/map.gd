@@ -1,63 +1,15 @@
+class_name Map_gen
 extends Node2D
 
-# Permettra de signaler la fin de la génération de la map
-signal map_generated
 
-# =========================
-# Textures
-# =========================
-@export var TileWater: Texture2D
-@export var TileDeepWater: Texture2D
-@export var TileSand: Texture2D
-@export var TileEarth: Texture2D
-@export var TileForest: Texture2D
-@export var TileMountain: Texture2D
 
-# =========================
-# Map parameters
-# =========================
-@export var map_width : int = 256
-@export var map_height : int = 128
-@export var hex_width : int = 256
-@export var hex_height : int = 128
 
-# =========================
-# Camera parameters
-# =========================
-@export var camera_speed := 600
-@export var camera_zoom := Vector2(0.5, 0.5)
+
 
 # =========================
 # Terrain tuning
 # =========================
 @export var water_ratio := 0.55
-
-# =========================
-# Noise parameters
-# =========================
-@export var noise_scale := 0.035
-@export var octaves := 4
-@export var lacunarity := 2.0
-@export var gain := 0.5
-@export var seed := 0
-
-# =========================
-# Island counts 
-# =========================
-@export var small_island_count := 20
-@export var medium_island_count := 30
-@export var large_island_count := 40
-
-# =========================
-# Island size ranges 
-# =========================
-@export var small_radius := Vector2(22.0, 36.0)
-@export var medium_radius := Vector2(48.0, 70.0)
-@export var large_radius := Vector2(85.0, 120.0)
-
-@export var small_power := Vector2(1.4, 1.9)
-@export var medium_power := Vector2(1.1, 1.5)
-@export var large_power := Vector2(0.75, 1.05)
 
 # =========================
 # Internal data
@@ -66,22 +18,26 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var noise: FastNoiseLite = FastNoiseLite.new()
 var height_map := []
 var tiles := []
-var camera: Camera2D
 var islands := []
 var ocean_cases: Array = []	#liste des cases navigables
 
+var map_data : Map_data
 
-# permet de rajouter l'objet dans le groupe avant le passage du GameManager
+
+
 func _enter_tree():
-	add_to_group("map")
+	pass
 
 
 # =========================
 # Ready
 # =========================
 func _ready():
+	pass
+	#generate()
+
+func generate()-> bool:
 	rng.randomize()
-	init_camera()
 	init_maps()
 	init_noise()
 	generate_island_centers()
@@ -89,20 +45,17 @@ func _ready():
 	generate_tiles()
 	render_tiles()
 	compute_ocean_cases()
-	#permet de signaler au moteur que la map est générée
-	emit_signal("map_generated")
-
-
-# =========================
-# Camera setup
-# =========================
-func init_camera():
-	camera = Camera2D.new()        
+	return true
 	
-	camera.enabled = true          
-	camera.zoom = camera_zoom      
-	add_child(camera)              
-	camera.make_current()  
+
+func _init(params: Dictionary):
+	# permet de rajouter l'objet dans le groupe avant le passage du GameManager
+	add_to_group("map")
+	if(params.has("map_data")):
+		self.map_data = params.get("map_data")
+	else:
+		self.map_data = Map_data.new()
+
 
 # =========================
 # Init arrays
@@ -111,10 +64,10 @@ func init_maps():
 	height_map.clear()
 	tiles.clear()
 
-	for y in range(map_height):
+	for y in range(map_data.map_height):
 		height_map.append([])
 		tiles.append([])
-		for x in range(map_width):
+		for x in range(map_data.map_width):
 			height_map[y].append(0.0)
 			tiles[y].append("water")
 
@@ -123,11 +76,11 @@ func init_maps():
 # =========================
 func init_noise():
 	noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	noise.seed = seed if seed != 0 else randi()
-	noise.frequency = noise_scale
-	noise.fractal_octaves = octaves
-	noise.fractal_lacunarity = lacunarity
-	noise.fractal_gain = gain
+	noise.seed = map_data.seed if map_data.seed != 0 else randi()
+	noise.frequency = map_data.noise_scale
+	noise.fractal_octaves = map_data.octaves
+	noise.fractal_lacunarity = map_data.lacunarity
+	noise.fractal_gain = map_data.gain
 
 # =========================
 # Island helpers
@@ -135,8 +88,8 @@ func init_noise():
 func add_island(radius_range: Vector2, power_range: Vector2):
 	islands.append({
 		"pos": Vector2(
-			rng.randf_range(25, map_width - 25),
-			rng.randf_range(25, map_height - 25)
+			rng.randf_range(25, map_data.map_width - 25),
+			rng.randf_range(25, map_data.map_height - 25)
 		),
 		"radius": rng.randf_range(radius_range.x, radius_range.y),
 		"power": rng.randf_range(power_range.x, power_range.y)
@@ -148,21 +101,21 @@ func add_island(radius_range: Vector2, power_range: Vector2):
 func generate_island_centers():
 	islands.clear()
 
-	for i in range(small_island_count):
-		add_island(small_radius, small_power)
+	for i in range(map_data.small_island_count):
+		add_island(map_data.small_radius, map_data.small_power)
 
-	for i in range(medium_island_count):
-		add_island(medium_radius, medium_power)
+	for i in range(map_data.medium_island_count):
+		add_island(map_data.medium_radius, map_data.medium_power)
 
-	for i in range(large_island_count):
-		add_island(large_radius, large_power)
+	for i in range(map_data.large_island_count):
+		add_island(map_data.large_radius, map_data.large_power)
 
 # =========================
 # Heightmap generation
 # =========================
 func generate_islands():
-	for y in range(map_height):
-		for x in range(map_width):
+	for y in range(map_data.map_height):
+		for x in range(map_data.map_width):
 			var n: float = noise.get_noise_2d(x, y)
 			n = (n + 1.0) * 0.5
 
@@ -187,8 +140,8 @@ func generate_islands():
 # Tile classification
 # =========================
 func generate_tiles():
-	for y in range(map_height):
-		for x in range(map_width):
+	for y in range(map_data.map_height):
+		for x in range(map_data.map_width):
 			var h: float = height_map[y][x]
 
 			if h < water_ratio - 0.08:
@@ -208,21 +161,22 @@ func generate_tiles():
 # Rendering
 # =========================
 func render_tiles():
-	for y in range(map_height):
-		for x in range(map_width):
+	for y in range(map_data.map_height):
+		for x in range(map_data.map_width):
 			spawn_tile(tiles[y][x], x, y)
 
 func spawn_tile(t: String, q: int, r: int):
 	var s := Sprite2D.new()
 
 	match t:
-		"deepwater": s.texture = TileDeepWater
-		"water": s.texture = TileWater
-		"sand": s.texture = TileSand
-		"earth": s.texture = TileEarth
-		"forest": s.texture = TileForest
-		"mountain": s.texture = TileMountain
-
+		"deepwater": s.texture = map_data.TileDeepWater
+		"water": s.texture = map_data.TileWater
+		"sand": s.texture = map_data.TileSand
+		"earth": s.texture = map_data.TileEarth
+		"forest": s.texture = map_data.TileForest
+		"mountain": s.texture = map_data.TileMountain
+	if s.texture == null:
+		print("❌ Texture manquante pour :", t)
 	s.position = hex_to_pixel_iso(q, r)
 	add_child(s)
 
@@ -230,25 +184,11 @@ func spawn_tile(t: String, q: int, r: int):
 # Hex → Iso conversion
 # =========================
 func hex_to_pixel_iso(q: int, r: int) -> Vector2:
-	var x := q * (hex_width * 0.75 - 65)
+	var x := q * (map_data.hex_width * 0.75 - 65)
 	var y := r * (74 + 128 + 1)
 	if q % 2 == 1:
 		y += 101
 	return Vector2(x, y)
-
-# =========================
-# Camera movement
-# =========================
-func _process(delta: float):
-	if Input.is_action_pressed("ui_up"):
-		camera.position.y -= camera_speed * delta
-	if Input.is_action_pressed("ui_down"):
-		camera.position.y += camera_speed * delta
-	if Input.is_action_pressed("ui_left"):
-		camera.position.x -= camera_speed * delta
-	if Input.is_action_pressed("ui_right"):
-		camera.position.x += camera_speed * delta
-		
 
 
 # =========================
@@ -261,13 +201,13 @@ func compute_ocean_cases() -> void:
 	var queue := []
 
 	# Start from all border tiles
-	for x in range(map_width):
+	for x in range(map_data.map_width):
 		queue.append(Vector2i(x, 0))
-		queue.append(Vector2i(x, map_height - 1))
+		queue.append(Vector2i(x, map_data.map_height - 1))
 
-	for y in range(map_height):
+	for y in range(map_data.map_height):
 		queue.append(Vector2i(0, y))
-		queue.append(Vector2i(map_width - 1, y))
+		queue.append(Vector2i(map_data.map_width - 1, y))
 
 	while queue.size() > 0:
 		var c: Vector2i = queue.pop_front()
@@ -294,7 +234,7 @@ func compute_ocean_cases() -> void:
 func monde_vers_case(pos: Vector2) -> Vector2i:
 	var x = pos.x
 	var y = pos.y
-	var q = int(round(x / (hex_width * 0.75 - 65)))
+	var q = int(round(x / (map_data.hex_width * 0.75 - 65)))
 	if q % 2 == 1:
 		y -= 101
 	var r = int(round(y / (74 + 128 + 1)))
@@ -305,7 +245,7 @@ func monde_vers_case(pos: Vector2) -> Vector2i:
 func case_vers_monde(c: Vector2i) -> Vector2:
 	var q = c.x
 	var r = c.y
-	var x = q * (hex_width * 0.75 - 65)
+	var x = q * (map_data.hex_width * 0.75 - 65)
 	var y = r * (74 + 128 + 1)
 	if q % 2 == 1:
 		y += 101
@@ -320,7 +260,7 @@ func case_vers_monde(c: Vector2i) -> Vector2:
 ## Returns true if the given grid coordinate is inside the map boundaries.
 # Vérification de la validité d'une case (est-ce que la position est dans la carte)
 func is_case_valid(c: Vector2i) -> bool:
-	return c.x >= 0 and c.x < map_width and c.y >= 0 and c.y < map_height
+	return c.x >= 0 and c.x < map_data.map_width and c.y >= 0 and c.y < map_data.map_height
 
 
 # ============================================================
@@ -360,8 +300,8 @@ func is_world_position_navigable(world_pos: Vector2) -> bool:
 ## Clamps a grid coordinate so it always stays inside the map.
 func clamp_case(c: Vector2i) -> Vector2i:
 	return Vector2i(
-		clampi(c.x, 0, map_width - 1),
-		clampi(c.y, 0, map_height - 1)
+		clampi(c.x, 0, map_data.map_width - 1),
+		clampi(c.y, 0, map_data.map_height - 1)
 	)
 
 ## Clamps a world position so it always maps to a valid tile.

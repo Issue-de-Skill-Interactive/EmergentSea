@@ -25,7 +25,7 @@ func getNavireByPosition(pos:Vector2i) -> Array:
 	var found : Array
 	if(not liste_navires.is_empty()):
 		for ship in liste_navires.values():
-			if(ship.getPosition()):
+			if(ship.getPosition()==pos):
 				found.append(ship)
 			
 	return found

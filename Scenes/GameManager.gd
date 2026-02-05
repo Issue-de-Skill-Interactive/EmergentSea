@@ -14,14 +14,16 @@ var navire_scene := preload("res://Scenes/navires/Navires.tscn")
 
 @onready var map
 @onready var data
+@onready var map_manager
 
 # Ce qui sera dans cette fonction sera exécuté en premier (avant que le reste soit prêt)
 func _enter_tree():
-	map = get_tree().get_first_node_in_group("map")
+	
+	map_manager = get_tree().get_first_node_in_group("Map_manager")
 	data = get_tree().get_first_node_in_group("shared_entities")
-	if map:
+	if map_manager:
 		# Permet de récupérer le signal plus tard pour pouvoir faire spawn les bateaux
-		map.map_generated.connect(_on_map_generated)
+		map_manager.map_generated.connect(_on_map_generated)
 		if not data:
 			push_error(">>> ERREUR : Aucune donnée partagée n'est accessible !")
 			
@@ -58,6 +60,7 @@ func spawn_navire(joueur_id: int, position: Vector2, is_player: bool = false):
 # cette fonction se déclenche à la réception d'un signal
 # indiquant que la génération de la map est terminée
 func _on_map_generated():
+	map = map_manager.map_gen
 	# Maintenant la carte existe, on peut faire spawn les navires
 
 	var joueurs = data.getPlayerList()
