@@ -8,10 +8,10 @@
 [ext_resource type="Texture2D" uid="uid://dykacfjgni06m" path="res://Scenes/MAP/TileEarth.png" id="5_4kpch"]
 [ext_resource type="Texture2D" uid="uid://b7sd3takqslt2" path="res://Scenes/MAP/TileForest.png" id="6_grg3l"]
 [ext_resource type="Texture2D" uid="uid://bn4m5o2hjrd2v" path="res://Scenes/MAP/TileMountain.png" id="7_frkhe"]
-[ext_resource type="Script" uid="uid://rf6kb04x4h4v" path="res://Scenes/camera_2d.gd" id="9_4kpch"]
+[ext_resource type="Script" uid="uid://rf6kb04x4h4v" path="res://Scenes/CAMERA/camera_2d.gd" id="9_4kpch"]
 [ext_resource type="PackedScene" uid="uid://dbayx8jjgjey2" path="res://Scenes/GameManager.tscn" id="9_vy5pj"]
-[ext_resource type="Script" uid="uid://ddrseokeg42dh" path="res://Scenes/canvas_layer.gd" id="10_bmxlf"]
-[ext_resource type="Script" uid="uid://dr8py3hemabaj" path="res://Scenes/listes_entités.gd" id="12_grg3l"]
+[ext_resource type="Script" uid="uid://ddrseokeg42dh" path="res://Scenes/UI/canvas_layer.gd" id="10_bmxlf"]
+[ext_resource type="Script" uid="uid://dr8py3hemabaj" path="res://Scenes/DATA/listes_entités.gd" id="12_grg3l"]
 
 [node name="Main" type="Node2D"]
 
