@@ -9,6 +9,7 @@
 ##																	   ##
 ###===================================================================###
 extends Node
+ 
 
 # Scène du navire
 var navire_scene := preload("res://Scenes/navires/Navires.tscn")
