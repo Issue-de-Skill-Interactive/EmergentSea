@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://cfhs5uyx5g4go"]
 
 [ext_resource type="Script" uid="uid://dhuetiveiynws" path="res://Scenes/navires/navires.gd" id="1_32h2o"]
-[ext_resource type="PackedScene" uid="uid://dr4w82yq6lojk" path="res://Assets/navire/pirateShip.glb" id="2_32h2o"]
+[ext_resource type="PackedScene" uid="uid://cl2n4rsqsb6wa" path="res://Assets/navire/pirateShip.glb" id="2_32h2o"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_p8r5l"]
 viewport_path = NodePath("Sprite2D/SubViewport")
@@ -28,6 +28,6 @@ near = 0.1
 far = 100.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Sprite2D/SubViewport/Node3D"]
-transform = Transform3D(0.7660531, -0.07691643, -0.63815874, 0.064989164, -0.97845876, 0.19594608, -0.6394835, -0.19157852, -0.7445526, 7.422, 24.934, 2.285)
+transform = Transform3D(0.7660531, -0.07691644, -0.63815874, 0.064989164, -0.97845876, 0.1959461, -0.6394835, -0.1915785, -0.7445526, -34.27262, 26.425621, -45.2335)
 
 [node name="pirateShip" parent="Sprite2D/SubViewport/Node3D" instance=ExtResource("2_32h2o")]
