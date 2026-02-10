@@ -3,6 +3,7 @@ extends Node2D
 
 # Permettra de signaler au moteurs différents évènements
 signal sig_show_stats
+signal sig_show_fishing
 
 # =========================
 # ID
@@ -22,6 +23,7 @@ signal sig_show_stats
 
 
 # Stats
+var stats_panel : UI_stats_navire
 @export var vie: int = 10
 @export var maxvie: int = 10
 @export var energie: int = 3000
@@ -29,7 +31,6 @@ signal sig_show_stats
 @export var vitesse: float = 800.0
 @export var nrbequipage: int = 0
 @export var interaction_radius: float = 80.0
-@export var stats_duration: float = 2.5
 @export var tir: int = 10		#Portée d'un tir
 @export var dgt_tir: int = 2	#Dégât d'un tir
 
@@ -51,20 +52,13 @@ var fish_timer := 0.0
 
 # =========================
 # Feedback pêche
-var fish_feedback_label: Label
-@export var fish_feedback_duration: float = 0.8
+var fish_feedback_label: UI_fish_navires
+
+#var fish_feedback_label: Label
+var fish_feedback_duration: float = 0.8
 var fish_feedback_timer: float = 0.0
 
 
-# =========================
-# UI stats
-var stats_panel: Panel
-var vie_label: Label
-var energie_label: Label
-var equipage_label: Label  # NOUVEAU : Afficher l'équipage
-var nourriture_label: Label
-var stats_timer := 0.0
-var stats_visible := false
 
 # =========================
 # Déplacement
@@ -129,79 +123,11 @@ func _ready():
 
 	# ---------- UI STATS (pour TOUS les navires) ----------
 	if ui_layer:
-		_init_stats_ui()
+		stats_panel = UI_stats_navire.new(self)
+		fish_feedback_label = UI_fish_navires.new(self)
+		#_init_stats_ui()
 	else:
 		push_warning("ATTENTION : Pas de ui_layer trouvé!")
-
-
-# Permet d'initialiser l'UI
-func _init_stats_ui():
-	if not ui_layer:
-		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
-		return
-		
-	stats_panel = Panel.new()
-	stats_panel.visible = false
-
-	stats_panel.anchor_left = 1
-	stats_panel.anchor_top = 0
-	stats_panel.anchor_right = 1
-	stats_panel.anchor_bottom = 0
-	stats_panel.offset_left = -180
-	stats_panel.offset_top = 20
-	stats_panel.offset_right = -20
-	stats_panel.offset_bottom = 110
-
-	var style := StyleBoxFlat.new()
-	if is_player_ship:
-		style.bg_color = Color(0, 0.2, 0.4, 0.8)  # Bleu pour le joueur
-	else:
-		style.bg_color = Color(0.4, 0, 0, 0.8)  # Rouge pour l'ennemi
-	
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	stats_panel.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stats_panel.add_child(vbox)
-
-	# Titre (JOUEUR ou ENNEMI)
-	var title_label := Label.new()
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if is_player_ship:
-		title_label.text = "🚢 JOUEUR"
-		title_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1))
-	else:
-		title_label.text = "☠️ ENNEMI"
-		title_label.add_theme_color_override("font_color", Color(1, 0.5, 0.5))
-	vbox.add_child(title_label)
-
-	vie_label = Label.new()
-	energie_label = Label.new()
-	nourriture_label = Label.new()
-	equipage_label = Label.new()
-	nourriture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vie_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	energie_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equipage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	vbox.add_child(vie_label)
-	vbox.add_child(energie_label)
-
-	vbox.add_child(equipage_label)
-
-	vbox.add_child(nourriture_label)
-
-	ui_layer.add_child(stats_panel)
-	_init_fish_feedback()
-	
-	print(">>> UI Stats créée pour navire ", "JOUEUR" if is_player_ship else "ENNEMI")
-  
 
 
 # =========================
@@ -213,11 +139,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	
 	# pour setup ça : Projet/Paramètres du projet/Controles
 	if Input.is_action_just_pressed("toggle_stats") and is_player_ship:
+		#envoie un signal qui est récupéré par l'UI_stats_navires associé à ce navire
 		emit_signal("sig_show_stats")
-		if not stats_visible:
-			show_stats()
-		else:
-			hide_all_ships_stats()
 	
   # ----- Pêche (clavier) -----
 	if event.is_action_pressed("fish"):
@@ -271,7 +194,6 @@ func get_ship_at_position(pos: Vector2) -> Navires:
 			var distance = pos.distance_to(ship.global_position)
 			if distance <= ship.interaction_radius:
 				return ship
-	
 	return null
 
 func hide_all_ships_stats():
@@ -283,28 +205,15 @@ func hide_all_ships_stats():
 			ship.hide_stats()
 
 
-
-
 # =========================
 # PROCESS
 func _process(delta):
-	
-	
-	
 	# ----- Animation de la flèche -----
 	if show_arrow and is_player_ship:
 		queue_redraw()  # Redessiner en continu pour l'animation
-	
-	# ----- Timer UI stats (pour TOUS les navires) -----
-	if stats_visible:
-		stats_timer -= delta
-		update_stats()
-		if stats_timer <= 0:
-			hide_stats()
-			
+
 	# ----- Pêche -----
 	_update_fishing(delta)
-	_update_fish_feedback(delta)
 	
 	# ----- Déplacement (SEULEMENT pour le navire joueur - les ennemis sont immobiles) -----
 	if is_player_ship and is_moving and not path.is_empty():
@@ -323,7 +232,6 @@ func _process(delta):
 				queue_redraw()
 		else:
 			global_position += direction.normalized() * vitesse * delta
-			
 
 
 # =========================
@@ -366,35 +274,6 @@ func _draw():
 	draw_circle(arrow_base, 16 * pulse, glow_color)
 	draw_circle(arrow_base, 8, arrow_color)
 
-
-# =========================
-# UI FUNCTIONS (pour TOUS les navires)
-func show_stats():
-	if not stats_panel:
-		push_warning("ATTENTION : Pas de stats_panel pour afficher les stats!")
-		return
-		
-	stats_visible = true
-	stats_timer = stats_duration
-	stats_panel.visible = true
-	update_stats()
-
-func hide_stats():
-	if not stats_panel:
-		return
-		
-	stats_visible = false
-	stats_panel.visible = false
-
-func update_stats():
-	if not stats_panel or not vie_label or not energie_label or not equipage_label:
-		return
-		
-	vie_label.text = "❤️ %d / %d" % [vie, maxvie]
-	energie_label.text = "⚡ %d / %d" % [energie, maxenergie]
-	equipage_label.text = "👥 %d" % nrbequipage
-	nourriture_label.text = "🐟 %d" % nourriture
-	
 # =========================
 # PÊCHE FUNCTIONS
 func _update_fishing(delta: float) -> void:
@@ -419,14 +298,12 @@ func try_start_fishing() -> void:
 		return
 
 	# Déclenchement
+	sig_show_fishing.emit()
 	is_fishing = true
-	if fish_feedback_label:
-		fish_feedback_label.text = "🎣 Pêche..."
-		fish_feedback_label.visible = true
 	fish_timer = fish_duration
 	energie = max(energie - fish_energy_cost, 0)
 
-	show_stats()
+	#show_stats()
 
 func finish_fishing() -> void:
 	is_fishing = false
@@ -438,42 +315,10 @@ func finish_fishing() -> void:
 
 	nourriture += gain
 	if fish_feedback_label:
-		fish_feedback_label.text = "+%d 🐟" % gain
-		fish_feedback_label.visible = true
-	fish_feedback_timer = fish_feedback_duration
-	show_stats()
-	
-func _init_fish_feedback() -> void:
-	fish_feedback_label = Label.new()
-	fish_feedback_label.visible = false
-	fish_feedback_label.text = "🎣 Pêche..."
-	fish_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		fish_feedback_label.finished_fishing(gain)
+		sig_show_stats.emit()
 
-	# Apparence simple
-	fish_feedback_label.add_theme_color_override("font_color", Color.WHITE)
-	fish_feedback_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	fish_feedback_label.add_theme_constant_override("outline_size", 6)
 
-	add_child(fish_feedback_label)
-	# position au-dessus du bateau (ajuste si besoin)
-	fish_feedback_label.position = Vector2(-30, -60)
-	
-func _update_fish_feedback(delta: float) -> void:
-	if not fish_feedback_label:
-		return
-	# Si on est en train de pêcher, on garde "🎣 Pêche..."
-	if is_fishing:
-		fish_feedback_label.visible = true
-		return
-
-	# Si on vient de finir, on affiche "+X 🐟" pendant fish_feedback_duration
-	if fish_feedback_timer > 0.0:
-		fish_feedback_timer -= delta
-		if fish_feedback_timer <= 0.0:
-			fish_feedback_label.visible = false
-	else:
-		# sécurité : cacher hors pêche / hors gain
-		fish_feedback_label.visible = false
 
 
 # =========================
@@ -550,7 +395,10 @@ func shoot(cible: Vector2):
 				#TODO : mieux gérer la façon dont les dégâts sont infligés (avec une méthode c'est mieux, histoire de gérer le cas vie <= 0)
 				bateau.vie -= dgt_tir # vie du bateau - les dégâts = vie après attaque
 				bateau.show_stats()
-				
+
+func show_stats():
+	print("stats showed")
+	emit_signal("sig_show_stats")
 
 # On vérifie la présence d'un bateau adverse sur la case ciblée.
 #TODO: renommer la fonction parce que c'est pas terrible
