@@ -3,6 +3,7 @@ extends Node2D
 
 # Permettra de signaler au moteurs différents évènements
 signal sig_show_stats
+signal sig_show_fishing
 
 # =========================
 # ID
@@ -51,8 +52,10 @@ var fish_timer := 0.0
 
 # =========================
 # Feedback pêche
-var fish_feedback_label: Label
-@export var fish_feedback_duration: float = 0.8
+var fish_feedback_label: UI_fish_navires
+
+#var fish_feedback_label: Label
+var fish_feedback_duration: float = 0.8
 var fish_feedback_timer: float = 0.0
 
 
@@ -121,6 +124,7 @@ func _ready():
 	# ---------- UI STATS (pour TOUS les navires) ----------
 	if ui_layer:
 		stats_panel = UI_stats_navire.new(self)
+		fish_feedback_label = UI_fish_navires.new(self)
 		#_init_stats_ui()
 	else:
 		push_warning("ATTENTION : Pas de ui_layer trouvé!")
@@ -210,7 +214,6 @@ func _process(delta):
 
 	# ----- Pêche -----
 	_update_fishing(delta)
-	_update_fish_feedback(delta)
 	
 	# ----- Déplacement (SEULEMENT pour le navire joueur - les ennemis sont immobiles) -----
 	if is_player_ship and is_moving and not path.is_empty():
@@ -295,10 +298,8 @@ func try_start_fishing() -> void:
 		return
 
 	# Déclenchement
+	sig_show_fishing.emit()
 	is_fishing = true
-	if fish_feedback_label:
-		fish_feedback_label.text = "🎣 Pêche..."
-		fish_feedback_label.visible = true
 	fish_timer = fish_duration
 	energie = max(energie - fish_energy_cost, 0)
 
@@ -314,42 +315,10 @@ func finish_fishing() -> void:
 
 	nourriture += gain
 	if fish_feedback_label:
-		fish_feedback_label.text = "+%d 🐟" % gain
-		fish_feedback_label.visible = true
-	fish_feedback_timer = fish_feedback_duration
-	#show_stats()
-	
-func _init_fish_feedback() -> void:
-	fish_feedback_label = Label.new()
-	fish_feedback_label.visible = false
-	fish_feedback_label.text = "🎣 Pêche..."
-	fish_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		fish_feedback_label.finished_fishing(gain)
+		sig_show_stats.emit()
 
-	# Apparence simple
-	fish_feedback_label.add_theme_color_override("font_color", Color.WHITE)
-	fish_feedback_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	fish_feedback_label.add_theme_constant_override("outline_size", 6)
 
-	add_child(fish_feedback_label)
-	# position au-dessus du bateau (ajuste si besoin)
-	fish_feedback_label.position = Vector2(-30, -60)
-	
-func _update_fish_feedback(delta: float) -> void:
-	if not fish_feedback_label:
-		return
-	# Si on est en train de pêcher, on garde "🎣 Pêche..."
-	if is_fishing:
-		fish_feedback_label.visible = true
-		return
-
-	# Si on vient de finir, on affiche "+X 🐟" pendant fish_feedback_duration
-	if fish_feedback_timer > 0.0:
-		fish_feedback_timer -= delta
-		if fish_feedback_timer <= 0.0:
-			fish_feedback_label.visible = false
-	else:
-		# sécurité : cacher hors pêche / hors gain
-		fish_feedback_label.visible = false
 
 
 # =========================
