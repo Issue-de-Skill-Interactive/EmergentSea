@@ -150,20 +150,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_pos := get_global_mouse_position()
 
-		# ===== CLIC DROIT → STATS =====
-		#if event.button_index == MOUSE_BUTTON_RIGHT:
-			## Vérifier si on clique sur NOTRE navire ou sur un autre
-			#var clicked_ship = get_ship_at_position(mouse_pos)
-			#
-			#if clicked_ship:
-				## Afficher les stats du navire cliqué
-				#clicked_ship.show_stats()
-				#get_viewport().set_input_as_handled()
-		#else:
-				## Cacher toutes les stats si on clique ailleurs
-				#hide_all_ships_stats()
-		
-
 		# ===== CLIC GAUCHE → DÉPLACEMENT =====
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if energie > 0 and not is_moving and not is_fishing:
