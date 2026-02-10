@@ -8,9 +8,12 @@ signal map_generated
 @export var map_gen : Map_gen
 @export var map_utils : Map_utils
 
+var grid : HexGrid
+
 func _enter_tree():
 	add_to_group("Map_manager")
-	
+	grid = HexGrid.new()
+	add_child(grid)
 	Map_data.new()
 	map_gen = Map_gen.new()
 	map_utils = Map_utils.new()
@@ -21,7 +24,10 @@ func _ready():
 	var is_map_gen = map_gen.generate()
 	if(is_map_gen):
 		print(">>> Map générée")
-		render_map()
+		grid.generate_hex_grid_rectangular()
+		grid.import_from_map_data()
+		grid.spawn_all_tiles(self)
+		#render_map()
 		print(">>> Rendu de la map effectué")
 		#permet de signaler au moteur que la map est générée
 		emit_signal("map_generated")
@@ -36,7 +42,7 @@ func render_map():
 		for x in range(Map_data.map_width):
 			spawn_tile(Map_data.tiles[y][x], x, y)
 
-func spawn_tile(t: String, q: int, r: int):
+func spawn_tile(t: String, col: int, row: int):
 	var s := Sprite2D.new()
 
 	match t:
@@ -47,5 +53,6 @@ func spawn_tile(t: String, q: int, r: int):
 		"forest": s.texture = Map_data.TileForest
 		"mountain": s.texture = Map_data.TileMountain
 
-	s.position = Map_utils.hex_to_pixel_iso(q, r)
+	s.position = Map_utils.hex_to_pixel_iso(col, row)
+	
 	add_child(s)

@@ -12,10 +12,10 @@ func _init():
 # =========================
 # Hex → Iso conversion
 # =========================
-static func hex_to_pixel_iso(q: int, r: int) -> Vector2:
-	var x := q * (Map_data.hex_width * 0.75 - 65)
-	var y := r * (74 + 128 + 1)
-	if q % 2 == 1:
+static func hex_to_pixel_iso(col: int, row: int) -> Vector2:
+	var x := col * (Map_data.hex_width * 0.75 - 65)
+	var y := row * (74 + 128 + 1)
+	if col % 2 == 1:
 		y += 101
 	return Vector2(x, y)
 
