@@ -10,6 +10,7 @@
 
 [node name="shared_entities" type="Node2D" parent="."]
 script = ExtResource("12_grg3l")
+liste_joueurs = null
 
 [node name="Map" type="Node2D" parent="."]
 script = ExtResource("2_v1gob")

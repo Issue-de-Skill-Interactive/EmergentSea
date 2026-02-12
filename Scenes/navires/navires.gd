@@ -13,7 +13,7 @@ signal sig_show_fishing
 # PROPRIÉTAIRE ET IDENTITÉ
 # =========================
 ## Référence directe au joueur propriétaire (remplace joueur_id)
-var player_owner: Player = null
+@export var player_owner: Player = null
 
 ## ID unique du navire
 @export var id: int = 0
@@ -77,22 +77,7 @@ var fish_feedback_label: UI_fish_navires
 var fish_feedback_timer: float = 0.0
 
 
-# =========================
-# UI STATS - DEUX PANNEAUX
-# =========================
-# Panneau pour navire allié (à droite)
-var stats_panel_ally: Panel
-var vie_label_ally: Label
-var energie_label_ally: Label
-var equipage_label_ally: Label
-var nourriture_label_ally: Label
 
-# Panneau pour navire ennemi (à gauche)
-var stats_panel_enemy: Panel
-var vie_label_enemy: Label
-var energie_label_enemy: Label
-var equipage_label_enemy: Label
-var nourriture_label_enemy: Label
 
 var stats_timer := 0.0
 var stats_visible := false
@@ -183,18 +168,18 @@ func _setup_input_handling() -> void:
 	else:
 		set_process_input(false)
 		set_process_unhandled_input(false)
-    
-    # ---------- UI STATS (pour TOUS les navires) ----------
+	
+	# ---------- UI STATS (pour TOUS les navires) ----------
 	if ui_layer:
-		stats_panel = UI_stats_navire.new(self)
+		stats_panel = await UI_stats_navire.new(self)
 		fish_feedback_label = UI_fish_navires.new(self)
 		#_init_stats_ui()
 	else:
 		# Masquer uniquement le panneau allié si ce navire est désélectionné
-		if stats_panel_ally:
-			stats_panel_ally.visible = false
+		if stats_panel.stats_panel_ally:
+			stats_panel.stats_panel_ally.visible = false
 	
-	print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
+	#print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
 
 
 # =========================
@@ -246,8 +231,8 @@ func set_selected(selected: bool) -> void:
 		show_stats()
 	else:
 		# Masquer uniquement le panneau allié si ce navire est désélectionné
-		if stats_panel_ally:
-			stats_panel_ally.visible = false
+		if stats_panel.stats_panel_ally:
+			stats_panel.stats_panel_ally.visible = false
 	
 	print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
 
@@ -288,7 +273,7 @@ func die() -> void:
 		set_selected(false)
 	
 	# Masquer TOUS les panneaux de stats
-	hide_all_stats()
+	stats_panel.hide_all_stats()
 	
 	# Masquer le feedback de pêche
 	if fish_feedback_label and is_instance_valid(fish_feedback_label):
@@ -325,125 +310,15 @@ func _init_stats_ui():
 		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
 		return
 	
-	# Créer le panneau allié (à droite)
-	_create_ally_stats_panel()
+	## Créer le panneau allié (à droite)
+	#stats_panel._create_ally_stats_panel()
+	#
+	## Créer le panneau ennemi (à gauche)
+	#stats_panel._create_enemy_stats_panel()
 	
-	# Créer le panneau ennemi (à gauche)
-	_create_enemy_stats_panel()
-	
-	_init_fish_feedback()
+	#fish_feedback_label._init_fish_feedback()
 	
 	print(">>> UI Stats créée pour navire [%d]" % id)
-
-
-func _create_ally_stats_panel():
-	"""Crée le panneau de stats pour les navires alliés (à droite)"""
-	stats_panel_ally = Panel.new()
-	stats_panel_ally.visible = false
-
-	stats_panel_ally.anchor_left = 1
-	stats_panel_ally.anchor_top = 0
-	stats_panel_ally.anchor_right = 1
-	stats_panel_ally.anchor_bottom = 0
-	stats_panel_ally.offset_left = -180
-	stats_panel_ally.offset_top = 20
-	stats_panel_ally.offset_right = -20
-	stats_panel_ally.offset_bottom = 110
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0.2, 0.4, 0.9)  # Bleu pour allié
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	stats_panel_ally.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stats_panel_ally.add_child(vbox)
-
-	# Titre
-	var title_label := Label.new()
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var owner_name = player_owner.player_name if player_owner else "???"
-	title_label.text = "🚢 " + owner_name
-	title_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1))
-	vbox.add_child(title_label)
-
-	# Labels de stats
-	vie_label_ally = Label.new()
-	energie_label_ally = Label.new()
-	nourriture_label_ally = Label.new()
-	equipage_label_ally = Label.new()
-	
-	vie_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	energie_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equipage_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nourriture_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	vbox.add_child(vie_label_ally)
-	vbox.add_child(energie_label_ally)
-	vbox.add_child(equipage_label_ally)
-	vbox.add_child(nourriture_label_ally)
-
-	ui_layer.add_child(stats_panel_ally)
-
-
-func _create_enemy_stats_panel():
-	"""Crée le panneau de stats pour les navires ennemis (à gauche)"""
-	stats_panel_enemy = Panel.new()
-	stats_panel_enemy.visible = false
-
-	stats_panel_enemy.anchor_left = 0
-	stats_panel_enemy.anchor_top = 0
-	stats_panel_enemy.anchor_right = 0
-	stats_panel_enemy.anchor_bottom = 0
-	stats_panel_enemy.offset_left = 20
-	stats_panel_enemy.offset_top = 20
-	stats_panel_enemy.offset_right = 180
-	stats_panel_enemy.offset_bottom = 110
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.4, 0, 0, 0.9)  # Rouge pour ennemi
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	stats_panel_enemy.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stats_panel_enemy.add_child(vbox)
-
-	# Titre
-	var title_label := Label.new()
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var owner_name = player_owner.player_name if player_owner else "???"
-	title_label.text = "☠️ " + owner_name
-	title_label.add_theme_color_override("font_color", Color(1, 0.5, 0.5))
-	vbox.add_child(title_label)
-
-	# Labels de stats
-	vie_label_enemy = Label.new()
-	energie_label_enemy = Label.new()
-	nourriture_label_enemy = Label.new()
-	equipage_label_enemy = Label.new()
-	
-	vie_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	energie_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equipage_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nourriture_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	vbox.add_child(vie_label_enemy)
-	vbox.add_child(energie_label_enemy)
-	vbox.add_child(equipage_label_enemy)
-	vbox.add_child(nourriture_label_enemy)
-
-	ui_layer.add_child(stats_panel_enemy)
 
 
 # =========================
@@ -608,9 +483,9 @@ func _process(delta):
 	# Timer UI stats
 	if stats_visible:
 		stats_timer -= delta
-		update_stats()
+		stats_panel.update_stats()
 		if stats_timer <= 0:
-			hide_all_stats()
+			stats_panel.hide_all_stats()
 	
 	# Pêche
 	_update_fishing(delta)
@@ -703,53 +578,7 @@ func _draw():
 # =========================
 # UI FUNCTIONS
 # =========================
-func show_stats():
-	"""Affiche les stats du navire dans le bon panneau"""
-	stats_visible = true
-	stats_timer = stats_duration
-	
-	# Déterminer si ce navire est allié ou ennemi
-	var is_ally = (player_owner and player_owner.is_human)
-	
-	if is_ally:
-		# Afficher dans le panneau allié (droite)
-		if stats_panel_ally:
-			stats_panel_ally.visible = true
-			update_stats()
-	else:
-		# Afficher dans le panneau ennemi (gauche)
-		if stats_panel_enemy:
-			stats_panel_enemy.visible = true
-			update_stats()
 
-
-func hide_all_stats():
-	"""Masque tous les panneaux de stats de ce navire"""
-	stats_visible = false
-	
-	if stats_panel_ally:
-		stats_panel_ally.visible = false
-	
-	if stats_panel_enemy:
-		stats_panel_enemy.visible = false
-
-
-func update_stats():
-	"""Met à jour l'affichage des stats"""
-	var is_ally = (player_owner and player_owner.is_human)
-	
-	if is_ally:
-		if vie_label_ally and energie_label_ally and equipage_label_ally:
-			vie_label_ally.text = "❤️ %d / %d" % [vie, maxvie]
-			energie_label_ally.text = "⚡ %d / %d" % [energie, maxenergie]
-			equipage_label_ally.text = "👥 %d" % nrbequipage
-			nourriture_label_ally.text = "🐟 %d" % nourriture
-	else:
-		if vie_label_enemy and energie_label_enemy and equipage_label_enemy:
-			vie_label_enemy.text = "❤️ %d / %d" % [vie, maxvie]
-			energie_label_enemy.text = "⚡ %d / %d" % [energie, maxenergie]
-			equipage_label_enemy.text = "👥 %d" % nrbequipage
-			nourriture_label_enemy.text = "🐟 %d" % nourriture
 
 
 # =========================
@@ -794,6 +623,7 @@ func finish_fishing() -> void:
 	if fish_feedback_label:
 		fish_feedback_label.finished_fishing(gain)
 		sig_show_stats.emit()
+		print("fishing finished")
 
 
 
