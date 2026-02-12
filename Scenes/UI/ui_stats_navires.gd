@@ -40,18 +40,8 @@ func _init(ship : Navires) -> void:
 	navire.add_child(self)
 	navire.sig_show_stats.connect(handler)
 	
-	#build_ui()
-	##### SOLUTION TEMPORAIRE PARCE QUE SINON CA MARCHE PAS
-	await get_tree().process_frame
-	ui_layer = get_tree().get_first_node_in_group("ui_layer")
-	if not ui_layer:
-		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
-		return
-	# Créer le panneau allié (à droite)
-	_create_ally_stats_panel()
+	build_ui()
 	
-	# Créer le panneau ennemi (à gauche)
-	_create_enemy_stats_panel()
 
 func _process(delta):
 	if isVisible():
@@ -69,67 +59,12 @@ func build_ui():
 	if not ui_layer:
 		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
 		return
-	stats_panel = Panel.new()
-	stats_panel.visible = false
 
-	stats_panel.anchor_left = 1
-	stats_panel.anchor_top = 0
-	stats_panel.anchor_right = 1
-	stats_panel.anchor_bottom = 0
-	stats_panel.offset_left = -180
-	stats_panel.offset_top = 20
-	stats_panel.offset_right = -20
-	stats_panel.offset_bottom = 110
-
-	var style := StyleBoxFlat.new()
-	if navire.is_player_ship:
-		style.bg_color = color_bg_player
-	else:
-		style.bg_color = color_bg_enemy
+	# Créer le panneau allié (à droite)
+	_create_ally_stats_panel()
 	
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	stats_panel.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stats_panel.add_child(vbox)
-
-	# Titre (JOUEUR ou ENNEMI)
-	var title_label := Label.new()
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if navire.is_player_ship:
-		title_label.text = "🚢 JOUEUR"
-		title_label.add_theme_color_override("font_color", color_txt_player)
-	else:
-		title_label.text = "☠️ ENNEMI"
-		title_label.add_theme_color_override("font_color", color_txt_enemy)
-	vbox.add_child(title_label)
-
-	vie_label = Label.new()
-	energie_label = Label.new()
-	nourriture_label = Label.new()
-	equipage_label = Label.new()
-	nourriture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vie_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	energie_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equipage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	vbox.add_child(vie_label)
-	vbox.add_child(energie_label)
-	vbox.add_child(equipage_label)
-	vbox.add_child(nourriture_label)
-	
-	
-	ui_layer.add_child(stats_panel)
-	print(">>> UI Stats créée pour navire ", "JOUEUR" if navire.is_player_ship else "ENNEMI")
-
-
-
+	# Créer le panneau ennemi (à gauche)
+	_create_enemy_stats_panel()
 
 
 func handler():
@@ -139,8 +74,22 @@ func handler():
 		print("caché")
 	else:
 		#show()
-		show_stats()
+		show_ally()
 		print("visible")
+
+func show_enemy():
+	update_stats(label_list_enemy)
+	stats_panel_enemy.visible=true
+func show_ally():
+	update_stats(label_list_ally)
+	if(stats_panel_ally):
+		stats_panel_ally.visible=true
+		stats_visible=true
+func hide_enemy():
+	stats_panel_enemy.visible=false
+func hide_ally():
+	stats_panel_ally.visible=false
+	stats_visible=false
 
 func show():
 	if not stats_panel:
@@ -280,7 +229,6 @@ func create_vbox_title(vbox:VBoxContainer,color:Color):
 
 func show_stats():
 	"""Affiche les stats du navire dans le bon panneau"""
-	stats_visible = true
 	stats_timer = stats_duration
 	
 	# Déterminer si ce navire est allié ou ennemi
@@ -289,13 +237,13 @@ func show_stats():
 	if is_ally:
 		# Afficher dans le panneau allié (droite)
 		if stats_panel_ally:
-			stats_panel_ally.visible = true
-			update_stats()
+			show_ally()
+			update_stats(label_list_ally)
 	else:
 		# Afficher dans le panneau ennemi (gauche)
 		if stats_panel_enemy:
-			stats_panel_enemy.visible = true
-			update_stats()
+			show_enemy()
+			update_stats(label_list_enemy)
 
 
 func hide_all_stats():
@@ -303,30 +251,30 @@ func hide_all_stats():
 	stats_visible = false
 	
 	if stats_panel_ally:
-		stats_panel_ally.visible = false
+		hide_ally()
 	
 	if stats_panel_enemy:
-		stats_panel_enemy.visible = false
+		hide_enemy()
 
 
 
-func update_stats():
+func update_stats(label_list:Dictionary):
 	"""Met à jour l'affichage des stats"""	
-	if label_list_ally:
-		if(label_list_ally.has("vie")):
-			label_list_ally["vie"].text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
-		if(label_list_ally.has("energie")):
-			label_list_ally["energie"].text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
-		if(label_list_ally.has("equipage")):
-			label_list_ally["equipage"].text = "👥 %d" % navire.nrbequipage
-		if(label_list_ally.has("nourriture")):
-			label_list_ally["nourriture"].text = "🐟 %d" % navire.nourriture
-	if label_list_enemy:
-		if(label_list_enemy.has("vie")):
-			label_list_enemy["vie"].text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
-		if(label_list_enemy.has("energie")):
-			label_list_enemy["energie"].text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
-		if(label_list_enemy.has("equipage")):
-			label_list_enemy["equipage"].text = "👥 %d" % navire.nrbequipage
-		if(label_list_enemy.has("nourriture")):
-			label_list_enemy["nourriture"].text = "🐟 %d" % navire.nourriture
+	if label_list:
+		if(label_list.has("vie")):
+			label_list["vie"].text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
+		if(label_list.has("energie")):
+			label_list["energie"].text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
+		if(label_list.has("equipage")):
+			label_list["equipage"].text = "👥 %d" % navire.nrbequipage
+		if(label_list.has("nourriture")):
+			label_list["nourriture"].text = "🐟 %d" % navire.nourriture
+	#if label_list_enemy:
+		#if(label_list_enemy.has("vie")):
+			#label_list_enemy["vie"].text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
+		#if(label_list_enemy.has("energie")):
+			#label_list_enemy["energie"].text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
+		#if(label_list_enemy.has("equipage")):
+			#label_list_enemy["equipage"].text = "👥 %d" % navire.nrbequipage
+		#if(label_list_enemy.has("nourriture")):
+			#label_list_enemy["nourriture"].text = "🐟 %d" % navire.nourriture

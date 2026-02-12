@@ -127,6 +127,7 @@ func _init() -> void:
 func _ready():
 	await get_tree().process_frame
 	
+	
 	case_actuelle = Map_utils.monde_vers_case(global_position)
 
 	# Configuration de la caméra pour le navire contrôlé par le joueur
@@ -136,10 +137,8 @@ func _ready():
 	_setup_input_handling()
 	
 	# Initialisation de l'UI
-	if ui_layer:
-		_init_stats_ui()
-	else:
-		push_warning("ATTENTION : Pas de ui_layer trouvé!")
+	_init_stats_ui()
+	
 	
 	# Debug
 	var owner_name = player_owner.player_name if player_owner else "AUCUN"
@@ -168,18 +167,6 @@ func _setup_input_handling() -> void:
 	else:
 		set_process_input(false)
 		set_process_unhandled_input(false)
-	
-	# ---------- UI STATS (pour TOUS les navires) ----------
-	if ui_layer:
-		stats_panel = await UI_stats_navire.new(self)
-		fish_feedback_label = UI_fish_navires.new(self)
-		#_init_stats_ui()
-	#else:
-		## Masquer uniquement le panneau allié si ce navire est désélectionné
-		#if stats_panel.stats_panel_ally:
-			#stats_panel.stats_panel_ally.visible = false
-	
-	#print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
 
 
 # =========================
@@ -228,12 +215,10 @@ func set_selected(selected: bool) -> void:
 	if selected and player_owner and player_owner.is_human:
 		_setup_camera()
 		# Afficher les stats du navire sélectionné
-		stats_panel.show_stats()
+		if(stats_panel):
+			stats_panel.show_ally()
 	else:
 		stats_panel.hide_all_stats()
-		## Masquer uniquement le panneau allié si ce navire est désélectionné
-		#if stats_panel.stats_panel_ally:
-			#stats_panel.stats_panel_ally.visible = false
 	
 	print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
 
@@ -295,7 +280,7 @@ func heal(amount: int) -> void:
 		return
 	vie = min(vie + amount, maxvie)
 	if is_selected:
-		stats_panel.show_stats()
+		stats_panel.show_ally()
 
 
 func reset_energie() -> void:
@@ -310,14 +295,13 @@ func _init_stats_ui():
 	if not ui_layer:
 		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
 		return
-	
-	## Créer le panneau allié (à droite)
-	#stats_panel._create_ally_stats_panel()
-	#
-	## Créer le panneau ennemi (à gauche)
-	#stats_panel._create_enemy_stats_panel()
-	
-	#fish_feedback_label._init_fish_feedback()
+	# ---------- UI STATS (pour TOUS les navires) ----------
+	# On vérifie si le panel existe déjà avant d'en créer un nouveau
+	if stats_panel == null: 
+		stats_panel = UI_stats_navire.new(self)
+	# Idem pour le feedback de pêche (même problème potentiel)
+	if fish_feedback_label == null:
+		fish_feedback_label = UI_fish_navires.new(self)
 	
 	print(">>> UI Stats créée pour navire [%d]" % id)
 
@@ -348,8 +332,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Toggle stats
 	if Input.is_action_just_pressed("toggle_stats"):
 		#envoie un signal qui est récupéré par l'UI_stats_navires associé à ce navire
-		#emit_signal("sig_show_stats")
-		sig_show_stats.emit()
+		if(self.is_selected):
+			#sig_show_stats.emit()
+			emit_signal("sig_show_stats")
 	
 	# Pêche
 	if event.is_action_pressed("fish"):
@@ -412,7 +397,7 @@ func attempt_shoot(target_case: Vector2i) -> void:
 	if hit_count > 0:
 		energie = max(energie - 20, 0)
 		print("Tir effectué sur %d cible(s)!" % hit_count)
-		stats_panel.show_stats()  # Mise à jour de nos stats
+		stats_panel.show_ally()  # Mise à jour de nos stats
 	else:
 		print("Aucun ennemi sur cette case!")
 
@@ -471,7 +456,6 @@ func hide_all_ships_stats():
 	for ship in all_ships:
 		if ship is Navires:
 			ship.hide_all_stats()
-			ship.hide_stats()
 
 
 # =========================
@@ -481,14 +465,6 @@ func _process(delta):
 	# Animation de la sélection et de la flèche
 	if is_selected or show_arrow:
 		queue_redraw()
-	
-	# Timer UI stats
-	#if stats_visible:
-		#stats_timer -= delta
-		##stats_panel.update_stats()
-		#if stats_timer <= 0:
-			##stats_panel.hide_all_stats()
-			
 	
 	# Pêche
 	_update_fishing(delta)
@@ -612,7 +588,7 @@ func try_start_fishing() -> void:
 	fish_timer = fish_duration
 	energie = max(energie - fish_energy_cost, 0)
 
-	stats_panel.show_stats()
+	stats_panel.show_ally()
 
 
 func finish_fishing() -> void:
@@ -703,12 +679,11 @@ func shoot(cible: Vector2):
 				# si le bateau n'est pas celui du joueur, alors on peut tirer
 				#TODO : mieux gérer la façon dont les dégâts sont infligés (avec une méthode c'est mieux, histoire de gérer le cas vie <= 0)
 				bateau.vie -= dgt_tir # vie du bateau - les dégâts = vie après attaque
-				bateau.show_stats()
+				bateau.show_enemy()
 
 func show_stats():
 	print("stats showed")
-	sig_show_stats.emit()
-	#emit_signal("sig_show_stats")
+	stats_panel.show_enemy()
 
 # On vérifie la présence d'un bateau adverse sur la case ciblée.
 #TODO: renommer la fonction parce que c'est pas terrible

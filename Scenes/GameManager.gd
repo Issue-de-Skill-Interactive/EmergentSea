@@ -141,6 +141,7 @@ func spawn_navire(player: Player, position: Vector2, is_player_controlled: bool 
 # Cette fonction se déclenche à la réception d'un signal
 # indiquant que la génération de la map est terminée
 func _on_map_generated():
+	await get_tree().process_frame
 	# Essayer de récupérer le PlayersManager
 	if not _try_get_players_manager():
 		push_error(">>> ERREUR : PlayersManager introuvable dans l'arbre de scène !")
