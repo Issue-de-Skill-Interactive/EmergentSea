@@ -1,19 +1,33 @@
 class_name Navires
 extends Node2D
 
-# Permettra de signaler au moteurs différents évènements
+# Permettra de signaler au moteur différents évènements
 signal sig_show_stats
+signal sig_navire_died(navire: Navires)
+signal sig_navire_damaged(navire: Navires, damage: int)
+signal ship_clicked(ship: Navires)
+signal ship_destroyed(ship: Navires)
 signal sig_show_fishing
 
 # =========================
-# ID
+# PROPRIÉTAIRE ET IDENTITÉ
+# =========================
+## Référence directe au joueur propriétaire (remplace joueur_id)
+@export var player_owner: Player = null
+
+## ID unique du navire
 @export var id: int = 0
-@export var joueur_id: int = 0
-@export var is_player_ship: bool = false  # NOUVEAU : Détermine si c'est le navire du joueur
+
+## Détermine si c'est le navire contrôlé par le joueur humain actuel
+var is_player_controlled: bool = false
+
+## Indique si ce navire est actuellement sélectionné
+var is_selected: bool = false
+
 
 # =========================
-# Textures
-
+# TEXTURES
+# =========================
 @export var rendu0: Texture2D
 @export var rendu60: Texture2D
 @export var rendu120: Texture2D
@@ -22,7 +36,9 @@ signal sig_show_fishing
 @export var rendu300: Texture2D
 
 
-# Stats
+# =========================
+# STATS
+# =========================
 var stats_panel : UI_stats_navire
 @export var vie: int = 10
 @export var maxvie: int = 10
@@ -31,15 +47,18 @@ var stats_panel : UI_stats_navire
 @export var vitesse: float = 800.0
 @export var nrbequipage: int = 0
 @export var interaction_radius: float = 80.0
-@export var tir: int = 10		#Portée d'un tir
-@export var dgt_tir: int = 2	#Dégât d'un tir
+@export var stats_duration: float = 2.5
+@export var tir: int = 10		# Portée d'un tir
+@export var dgt_tir: int = 2	# Dégâts d'un tir
 
 @onready var ui_layer: CanvasLayer = get_tree().get_first_node_in_group("ui_layer")
 @onready var data := get_tree().get_first_node_in_group("shared_entities")
+@onready var players_manager: PlayersManager = get_tree().get_first_node_in_group("players_manager")
 
 
 # =========================
-# Pêche
+# PÊCHE
+# =========================
 @export var nourriture: int = 0
 @export var fish_energy_cost: int = 1
 @export var fish_duration: float = 1.2
@@ -51,98 +70,273 @@ var fish_timer := 0.0
 
 
 # =========================
-# Feedback pêche
+# FEEDBACK PÊCHE
+# =========================
 var fish_feedback_label: UI_fish_navires
-
-#var fish_feedback_label: Label
-var fish_feedback_duration: float = 0.8
+@export var fish_feedback_duration: float = 0.8
 var fish_feedback_timer: float = 0.0
 
 
 
+
+var stats_timer := 0.0
+var stats_visible := false
+
+
 # =========================
-# Déplacement
+# DÉPLACEMENT
+# =========================
 var path := []
 var is_moving := false
 var case_actuelle: Vector2i
-var target_position: Vector2 = Vector2.ZERO  # Position cible du clic
-var show_arrow: bool = false  # Afficher la flèche ou non
+var target_position: Vector2 = Vector2.ZERO
+var show_arrow: bool = false
+
 
 # =========================
-# Flèche de déplacement
-@export var arrow_color: Color = Color(1, 1, 0, 1.0)  # Jaune vif
-@export var arrow_outline_color: Color = Color(0, 0, 0, 1.0)  # Contour noir
-@export var arrow_width: float = 12.0  # Doublé
-@export var arrow_head_size: float = 60.0  # Doublé
-@export var arrow_height: float = 100.0  # Hauteur totale de la flèche augmentée
+# FLÈCHE DE DÉPLACEMENT
+# =========================
+@export var arrow_color: Color = Color(1, 1, 0, 1.0)
+@export var arrow_outline_color: Color = Color(0, 0, 0, 1.0)
+@export var arrow_width: float = 12.0
+@export var arrow_head_size: float = 60.0
+@export var arrow_height: float = 100.0
+
 
 # =========================
-# Caméra (optionnelle)
+# SÉLECTION VISUELLE
+# =========================
+@export var selection_color: Color = Color(0, 1, 0, 0.7)  # Vert
+@export var selection_thickness: float = 4.0
+@export var selection_radius: float = 50.0
+
+
+# =========================
+# CAMÉRA
+# =========================
 @onready var camera: Camera2D = get_node_or_null("Camera2D")
 
 
+# =========================
+# INITIALIZATION
+# =========================
 func _init() -> void:
-	pass
+	add_to_group("ships")
 
-# =========================
-# READY
-# =========================
 
 func _ready():
-	# On attend un tout petit délai pour être sûr que :
-	# - la carte est générée
-	# - le GameManager a placé le navire
-	# - global_position est correct
 	await get_tree().process_frame
+	
 	
 	case_actuelle = Map_utils.monde_vers_case(global_position)
 
-	# ---------- Caméra ----------
-	# Trouver la caméra indépendante (système existant)
-	var cam = get_tree().get_first_node_in_group("camera_controller")
-	if cam:
-		# Seul le navire joueur contrôle la caméra
-		if is_player_ship:
-			cam.set_target(self)
+	# Configuration de la caméra pour le navire contrôlé par le joueur
+	_setup_camera()
+	
+	# Configuration des inputs selon le type de contrôle
+	_setup_input_handling()
+	
+	# Initialisation de l'UI
+	_init_stats_ui()
+	
+	
+	# Debug
+	var owner_name = player_owner.player_name if player_owner else "AUCUN"
+	var control_type = "CONTRÔLÉ" if is_player_controlled else "IA/ENNEMI"
+	print(">>> Navire [%s] initialisé - Propriétaire: %s - Type: %s - Position: %s" % [
+		id, owner_name, control_type, case_actuelle
+	])
 
-	# ---------- Configuration selon le type de navire ----------
-	if is_player_ship:
-		# NAVIRE JOUEUR
-		# Activer le traitement des inputs
+
+func _setup_camera() -> void:
+	"""Configure la caméra pour suivre le navire si c'est celui du joueur"""
+	if not is_selected:
+		return
+		
+	var cam = get_tree().get_first_node_in_group("camera_controller")
+	if cam and cam.has_method("set_target"):
+		cam.set_target(self)
+
+
+func _setup_input_handling() -> void:
+	"""Configure la gestion des inputs selon le type de navire"""
+	# Tous les navires du joueur peuvent recevoir des inputs pour être sélectionnés
+	if player_owner and player_owner.is_human:
 		set_process_input(true)
 		set_process_unhandled_input(true)
-		
-		print(">>> Navire JOUEUR initialisé à position ", Map_utils.monde_vers_case(global_position))
 	else:
-		# NAVIRE ENNEMI
-		# Désactiver complètement les inputs
 		set_process_input(false)
 		set_process_unhandled_input(false)
-		
-		print(">>> Navire ENNEMI initialisé à position ", Map_utils.monde_vers_case(global_position))
-
-	# ---------- UI STATS (pour TOUS les navires) ----------
-	if ui_layer:
-		stats_panel = UI_stats_navire.new(self)
-		fish_feedback_label = UI_fish_navires.new(self)
-		#_init_stats_ui()
-	else:
-		push_warning("ATTENTION : Pas de ui_layer trouvé!")
 
 
 # =========================
-# INPUT (SEULEMENT pour le navire joueur)
-func _unhandled_input(event: InputEvent) -> void:
-	# Les navires ennemis n'écoutent pas les inputs du joueur
-	if not is_player_ship:
+# GESTION DU PROPRIÉTAIRE
+# =========================
+func set_owner_player(player: Player) -> void:
+	"""Définit le joueur propriétaire de ce navire"""
+	if player_owner != null and player_owner.has_method("remove_navire"):
+		player_owner.remove_navire(self)
+	
+	player_owner = player
+	
+	if player != null and player.has_method("add_navire"):
+		player.add_navire(self)
+	
+	# Reconfigurer les inputs
+	_setup_input_handling()
+
+
+func get_owner_player() -> Player:
+	"""Retourne le joueur propriétaire"""
+	return player_owner
+
+
+func is_owned_by(player: Player) -> bool:
+	"""Vérifie si ce navire appartient au joueur spécifié"""
+	return player_owner == player
+
+
+func is_enemy_of(other_navire: Navires) -> bool:
+	"""Vérifie si ce navire est ennemi d'un autre navire"""
+	if player_owner == null or other_navire.player_owner == null:
+		return false
+	return player_owner != other_navire.player_owner
+
+
+# =========================
+# SÉLECTION
+# =========================
+func set_selected(selected: bool) -> void:
+	"""Définit si ce navire est sélectionné"""
+	is_selected = selected
+	queue_redraw()
+	
+	# Activer/désactiver la caméra selon la sélection
+	if selected and player_owner and player_owner.is_human:
+		_setup_camera()
+		# Afficher les stats du navire sélectionné
+		if(stats_panel):
+			stats_panel.show_ally()
+	else:
+		stats_panel.hide_all_stats()
+	
+	print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
+
+
+# =========================
+# ÉTAT DU NAVIRE
+# =========================
+func is_alive() -> bool:
+	"""Vérifie si le navire est encore en vie"""
+	return vie > 0
+
+
+func take_damage(damage: int) -> void:
+	"""Applique des dégâts au navire"""
+	if not is_alive():
 		return
 	
-	# pour setup ça : Projet/Paramètres du projet/Controles
-	if Input.is_action_just_pressed("toggle_stats") and is_player_ship:
-		#envoie un signal qui est récupéré par l'UI_stats_navires associé à ce navire
-		emit_signal("sig_show_stats")
+	vie = max(vie - damage, 0)
+	emit_signal("sig_navire_damaged", self, damage)
 	
-  # ----- Pêche (clavier) -----
+	# Afficher les stats du navire touché (ennemi)
+	stats_panel.show_stats()
+	
+	if vie <= 0:
+		die()
+
+
+func die() -> void:
+	"""Gère la mort du navire"""
+	print(">>> Navire [%d] en train de mourir..." % id)
+	
+	# IMPORTANT : Émettre le signal AVANT toute modification
+	emit_signal("ship_destroyed", self)
+	emit_signal("sig_navire_died", self)
+	
+	# Désélectionner visuellement le navire
+	if is_selected:
+		set_selected(false)
+	
+	# Masquer TOUS les panneaux de stats
+	stats_panel.hide_all_stats()
+	
+	# Masquer le feedback de pêche
+	if fish_feedback_label and is_instance_valid(fish_feedback_label):
+		fish_feedback_label.hide()
+	
+	# Notifier le propriétaire
+	if player_owner != null and player_owner.has_method("remove_navire"):
+		player_owner.remove_navire(self)
+	
+	# Libération des ressources
+	print(">>> Navire [%d] détruit" % id)
+	queue_free()
+
+
+func heal(amount: int) -> void:
+	"""Soigne le navire"""
+	if not is_alive():
+		return
+	vie = min(vie + amount, maxvie)
+	if is_selected:
+		stats_panel.show_ally()
+
+
+func reset_energie() -> void:
+	"""Réinitialise l'énergie au maximum"""
+	energie = maxenergie
+
+
+# =========================
+# UI INITIALIZATION
+# =========================
+func _init_stats_ui():
+	if not ui_layer:
+		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
+		return
+	# ---------- UI STATS (pour TOUS les navires) ----------
+	# On vérifie si le panel existe déjà avant d'en créer un nouveau
+	if stats_panel == null: 
+		stats_panel = UI_stats_navire.new(self)
+	# Idem pour le feedback de pêche (même problème potentiel)
+	if fish_feedback_label == null:
+		fish_feedback_label = UI_fish_navires.new(self)
+	
+	print(">>> UI Stats créée pour navire [%d]" % id)
+
+
+# =========================
+# INPUT
+# =========================
+func _unhandled_input(event: InputEvent) -> void:
+	# Vérifier que ce navire appartient au joueur humain
+	if not player_owner or not player_owner.is_human:
+		return
+	
+	# Détecter le clic sur ce navire pour le sélectionner
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_pos = get_global_mouse_position()
+		var distance = global_position.distance_to(mouse_pos)
+		
+		# Si on clique sur ce navire
+		if distance <= interaction_radius:
+			emit_signal("ship_clicked", self)
+			get_viewport().set_input_as_handled()
+			return
+	
+	# Le reste des inputs uniquement pour le navire sélectionné
+	if not is_selected:
+		return
+	
+	# Toggle stats
+	if Input.is_action_just_pressed("toggle_stats"):
+		#envoie un signal qui est récupéré par l'UI_stats_navires associé à ce navire
+		if(self.is_selected):
+			#sig_show_stats.emit()
+			emit_signal("sig_show_stats")
+	
+	# Pêche
 	if event.is_action_pressed("fish"):
 		try_start_fishing()
 		return
@@ -150,51 +344,110 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_pos := get_global_mouse_position()
 
-		# ===== CLIC DROIT → STATS =====
-		#if event.button_index == MOUSE_BUTTON_RIGHT:
-			## Vérifier si on clique sur NOTRE navire ou sur un autre
-			#var clicked_ship = get_ship_at_position(mouse_pos)
-			#
-			#if clicked_ship:
-				## Afficher les stats du navire cliqué
-				#clicked_ship.show_stats()
-				#get_viewport().set_input_as_handled()
-		#else:
-				## Cacher toutes les stats si on clique ailleurs
-				#hide_all_ships_stats()
-		
-
-		# ===== CLIC GAUCHE → DÉPLACEMENT =====
+		# CLIC GAUCHE → DÉPLACEMENT
 		if event.button_index == MOUSE_BUTTON_LEFT:
+			# Vérifier qu'on ne clique pas sur un autre navire
+			var clicked_ship = get_ship_at_position(mouse_pos)
+			if clicked_ship:
+				return  # On a cliqué sur un navire, ne pas se déplacer
+			
 			if energie > 0 and not is_moving and not is_fishing:
 				if Map_utils.is_on_water(mouse_pos):
 					path = calculer_chemin(case_actuelle, Map_utils.monde_vers_case(mouse_pos))
 					if not path.is_empty():
 						is_moving = true
-						target_position = mouse_pos  # Mémoriser la position cible
-						show_arrow = true  # Activer l'affichage de la flèche
-						queue_redraw()  # Forcer le redessin
+						target_position = mouse_pos
+						show_arrow = true
+						queue_redraw()
 						get_viewport().set_input_as_handled()
-		# ===== CLIC DROIT → TIR =====
+		
+		# CLIC DROIT → TIR
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			if energie > 20 :
-				if on_a_ship(Map_utils.monde_vers_case(mouse_pos)):
-					if is_on_range(case_actuelle, Map_utils.monde_vers_case(mouse_pos), tir):
-						shoot(Map_utils.monde_vers_case(mouse_pos))
+			var target_case = Map_utils.monde_vers_case(mouse_pos)
+			attempt_shoot(target_case)
+
+
+# =========================
+# COMBAT
+# =========================
+func attempt_shoot(target_case: Vector2i) -> void:
+	"""Tente de tirer sur une case cible"""
+	# Vérifications de base
+	if energie < 20:
+		print("Pas assez d'énergie pour tirer!")
+		return
+	
+	if not is_in_range(target_case):
+		print("Cible hors de portée!")
+		return
+	
+	# Récupérer les navires sur la case cible
+	var target_ships = get_ships_at_position(target_case)
+	if target_ships.is_empty():
+		print("Aucune cible sur cette case!")
+		return
+	
+	# Tirer sur tous les navires ennemis présents
+	var hit_count = 0
+	for target_ship in target_ships:
+		if target_ship.is_enemy_of(self):
+			shoot_at(target_ship)
+			hit_count += 1
+	
+	if hit_count > 0:
+		energie = max(energie - 20, 0)
+		print("Tir effectué sur %d cible(s)!" % hit_count)
+		stats_panel.show_ally()  # Mise à jour de nos stats
+	else:
+		print("Aucun ennemi sur cette case!")
+
+
+func shoot_at(target: Navires) -> void:
+	"""Tire sur un navire spécifique"""
+	if target == null or not target.is_alive():
+		return
+	
+	print(">>> Tir sur navire [%d]" % target.id)
+	target.take_damage(dgt_tir)
+	
+	# Effets visuels / son (à implémenter)
+	# ...
+
+
+func is_in_range(target_case: Vector2i) -> bool:
+	"""Vérifie si une case est à portée de tir"""
+	var chemin := calculer_chemin(case_actuelle, target_case)
+	return chemin.size() <= tir
+
+
+func get_ships_at_position(target_case: Vector2i) -> Array[Navires]:
+	"""Récupère tous les navires présents sur une case"""
+	var ships: Array[Navires] = []
+	
+	if data and data.has_method("getNavireByPosition"):
+		var raw_ships = data.getNavireByPosition(target_case)
+		for ship in raw_ships:
+			# Vérifier que le navire est toujours valide et vivant
+			if ship is Navires and is_instance_valid(ship) and ship.is_alive():
+				ships.append(ship)
+	
+	return ships
 
 
 # =========================
 # HELPER FUNCTIONS
+# =========================
 func get_ship_at_position(pos: Vector2) -> Navires:
 	"""Récupère le navire à une position donnée (dans le rayon d'interaction)"""
 	var all_ships = get_tree().get_nodes_in_group("ships")
 	
 	for ship in all_ships:
-		if ship is Navires:
+		if ship is Navires and ship != self:
 			var distance = pos.distance_to(ship.global_position)
 			if distance <= ship.interaction_radius:
 				return ship
 	return null
+
 
 func hide_all_ships_stats():
 	"""Cache les stats de tous les navires"""
@@ -202,80 +455,114 @@ func hide_all_ships_stats():
 	
 	for ship in all_ships:
 		if ship is Navires:
-			ship.hide_stats()
+			ship.hide_all_stats()
 
 
 # =========================
 # PROCESS
+# =========================
 func _process(delta):
-	# ----- Animation de la flèche -----
-	if show_arrow and is_player_ship:
-		queue_redraw()  # Redessiner en continu pour l'animation
-
-	# ----- Pêche -----
+	# Animation de la sélection et de la flèche
+	if is_selected or show_arrow:
+		queue_redraw()
+	
+	# Pêche
 	_update_fishing(delta)
 	
-	# ----- Déplacement (SEULEMENT pour le navire joueur - les ennemis sont immobiles) -----
-	if is_player_ship and is_moving and not path.is_empty():
-		var next_case = path[0]
-		var next_pos: Vector2 = Map_utils.case_vers_monde(next_case)
-		var direction := next_pos - global_position
+	# Déplacement (seulement pour le navire sélectionné)
+	if is_selected and is_moving and not path.is_empty():
+		_process_movement(delta)
 
-		if direction.length() < 5:
-			global_position = next_pos
-			path.remove_at(0)
-			case_actuelle = next_case
-			energie = max(energie - 1, 0)
-			if path.is_empty():
-				is_moving = false
-				show_arrow = false  # Cacher la flèche quand on arrive
-				queue_redraw()
-		else:
-			global_position += direction.normalized() * vitesse * delta
+
+func _process_movement(delta: float) -> void:
+	"""Gère le déplacement du navire"""
+	var next_case = path[0]
+	var next_pos: Vector2 = Map_utils.case_vers_monde(next_case)
+	var direction := next_pos - global_position
+
+	if direction.length() < 5:
+		global_position = next_pos
+		path.remove_at(0)
+		case_actuelle = next_case
+		energie = max(energie - 1, 0)
+		
+		if path.is_empty():
+			is_moving = false
+			show_arrow = false  # Cacher la flèche quand on arrive
+			queue_redraw()
+	else:
+		global_position += direction.normalized() * vitesse * delta
 
 
 # =========================
-# DRAW - Dessiner la flèche au-dessus de la case cible
+# DRAW
+# =========================
 func _draw():
-	if not show_arrow or not is_player_ship:
+	# Indicateur de sélection (cercle vert) - UNIQUEMENT si sélectionné
+	if is_selected and player_owner and player_owner.is_human:
+		# Animation de pulsation
+		var pulse = sin(Time.get_ticks_msec() * 0.003) * 5.0
+		var current_radius = selection_radius + pulse
+		
+		# Cercle extérieur (contour noir)
+		draw_arc(Vector2.ZERO, current_radius, 0, TAU, 32, Color.BLACK, selection_thickness + 2)
+		# Cercle intérieur (couleur de sélection)
+		draw_arc(Vector2.ZERO, current_radius, 0, TAU, 32, selection_color, selection_thickness)
+		
+		# Halo lumineux
+		var glow_alpha = (sin(Time.get_ticks_msec() * 0.004) * 0.15) + 0.2
+		var glow_color = Color(selection_color.r, selection_color.g, selection_color.b, glow_alpha)
+		draw_arc(Vector2.ZERO, current_radius + 8, 0, TAU, 32, glow_color, 2.0)
+	
+	# Flèche de déplacement (seulement pour le navire sélectionné)
+	if not show_arrow or not is_selected:
 		return
-	# Convertir la position cible en position locale pour le dessin
+	
+	
 	var local_target = target_position - global_position
 	var distance = local_target.length()
-	if distance < 10:  # Si on est très proche, ne pas dessiner
+	if distance < 10:
 		return
-	# Animation de pulsation (utiliser le temps)
+	
 	var pulse = sin(Time.get_ticks_msec() * 0.005) * 0.2 + 1.0
-	# Hauteur de la flèche au-dessus de la case
-	var offset_y = -80 + sin(Time.get_ticks_msec() * 0.003) * 15  
-	# Position de base et pointe de la flèche
+	var offset_y = -80 + sin(Time.get_ticks_msec() * 0.003) * 15
+	
 	var arrow_base = local_target + Vector2(0, offset_y - arrow_height)
 	var arrow_tip = local_target + Vector2(0, offset_y)
-	# --- CONTOUR NOIR (pour plus de visibilité) ---
-	# Ligne du contour
+	
+	# Contour noir
 	draw_line(arrow_base, arrow_tip, arrow_outline_color, arrow_width + 8)
-	# Tête de flèche (contour)
+	
 	var outline_size = arrow_head_size + 8
 	var left_outline = arrow_tip + Vector2(-outline_size * 0.5, -outline_size * 0.7)
 	var right_outline = arrow_tip + Vector2(outline_size * 0.5, -outline_size * 0.7)
 	var outline_points = PackedVector2Array([arrow_tip, left_outline, right_outline])
 	draw_colored_polygon(outline_points, arrow_outline_color)
-	# --- FLÈCHE PRINCIPALE (jaune) ---
-	# Ligne principale
+	
+	# Flèche principale
 	draw_line(arrow_base, arrow_tip, arrow_color, arrow_width * pulse)
-	# Tête de flèche
+	
 	var head_size = arrow_head_size * pulse
 	var left_point = arrow_tip + Vector2(-head_size * 0.5, -head_size * 0.7)
 	var right_point = arrow_tip + Vector2(head_size * 0.5, -head_size * 0.7)
 	var points = PackedVector2Array([arrow_tip, left_point, right_point])
 	draw_colored_polygon(points, arrow_color)
-	# Cercle lumineux à la base de la flèche 
+	
+	# Cercle lumineux
 	var glow_color = Color(arrow_color.r, arrow_color.g, arrow_color.b, 0.3)
 	draw_circle(arrow_base, 16 * pulse, glow_color)
 	draw_circle(arrow_base, 8, arrow_color)
 
+
 # =========================
-# PÊCHE FUNCTIONS
+# UI FUNCTIONS
+# =========================
+
+
+
+# =========================
+# PÊCHE
+# =========================
 func _update_fishing(delta: float) -> void:
 	if not is_fishing:
 		return
@@ -284,16 +571,14 @@ func _update_fishing(delta: float) -> void:
 	if fish_timer <= 0.0:
 		finish_fishing()
 
+
 func try_start_fishing() -> void:
-	# Pas de pêche en déplacement, ni si déjà en action
 	if is_moving or is_fishing:
 		return
 
-	# Ressource énergie
 	if energie < fish_energy_cost:
 		return
 
-	# Condition de terrain : uniquement sur l'eau
 	if not Map_utils.is_on_water(global_position):
 		return
 
@@ -303,13 +588,13 @@ func try_start_fishing() -> void:
 	fish_timer = fish_duration
 	energie = max(energie - fish_energy_cost, 0)
 
-	#show_stats()
+	stats_panel.show_ally()
+
 
 func finish_fishing() -> void:
 	is_fishing = false
 
 	var gain := randi_range(fish_yield_min, fish_yield_max)
-	# Bonus léger selon équipage (facultatif, mais cohérent "efficacité")
 	if nrbequipage >= 6:
 		gain += 1
 
@@ -317,12 +602,14 @@ func finish_fishing() -> void:
 	if fish_feedback_label:
 		fish_feedback_label.finished_fishing(gain)
 		sig_show_stats.emit()
+		print("fishing finished")
 
 
 
 
 # =========================
-# A* PATHFINDING (pour tous les navires)
+# PATHFINDING
+# =========================
 func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
 	var open_set := [start]
 	var came_from := {}
@@ -355,8 +642,6 @@ func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
 	return []
 
 
-# =========================
-# VOISINS
 func get_neighbors(c: Vector2i) -> Array:
 	var dirs = [
 		Vector2i(1, 0), Vector2i(-1, 0),
@@ -394,11 +679,11 @@ func shoot(cible: Vector2):
 				# si le bateau n'est pas celui du joueur, alors on peut tirer
 				#TODO : mieux gérer la façon dont les dégâts sont infligés (avec une méthode c'est mieux, histoire de gérer le cas vie <= 0)
 				bateau.vie -= dgt_tir # vie du bateau - les dégâts = vie après attaque
-				bateau.show_stats()
+				bateau.show_enemy()
 
 func show_stats():
 	print("stats showed")
-	emit_signal("sig_show_stats")
+	stats_panel.show_enemy()
 
 # On vérifie la présence d'un bateau adverse sur la case ciblée.
 #TODO: renommer la fonction parce que c'est pas terrible
@@ -419,12 +704,7 @@ func on_a_ship(cible: Vector2i) -> bool :
 
 # =========================
 # UTILS
-func reset_energie():
-	energie = maxenergie
-
-func heal(amount: int):
-	vie = min(vie + amount, maxvie)
-
-#permet d'obtenir la position du bateau
+# =========================
 func getPosition() -> Vector2i:
+	"""Retourne la position du navire en coordonnées de case"""
 	return case_actuelle
