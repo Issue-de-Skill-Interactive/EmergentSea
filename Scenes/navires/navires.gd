@@ -7,6 +7,7 @@ signal sig_navire_died(navire: Navires)
 signal sig_navire_damaged(navire: Navires, damage: int)
 signal ship_clicked(ship: Navires)
 signal ship_destroyed(ship: Navires)
+signal sig_show_fishing
 
 # =========================
 # PROPRIÉTAIRE ET IDENTITÉ
@@ -38,6 +39,7 @@ var is_selected: bool = false
 # =========================
 # STATS
 # =========================
+var stats_panel : UI_stats_navire
 @export var vie: int = 10
 @export var maxvie: int = 10
 @export var energie: int = 3000
@@ -70,7 +72,7 @@ var fish_timer := 0.0
 # =========================
 # FEEDBACK PÊCHE
 # =========================
-var fish_feedback_label: Label
+var fish_feedback_label: UI_fish_navires
 @export var fish_feedback_duration: float = 0.8
 var fish_feedback_timer: float = 0.0
 
@@ -181,6 +183,18 @@ func _setup_input_handling() -> void:
 	else:
 		set_process_input(false)
 		set_process_unhandled_input(false)
+    
+    # ---------- UI STATS (pour TOUS les navires) ----------
+	if ui_layer:
+		stats_panel = UI_stats_navire.new(self)
+		fish_feedback_label = UI_fish_navires.new(self)
+		#_init_stats_ui()
+	else:
+		# Masquer uniquement le panneau allié si ce navire est désélectionné
+		if stats_panel_ally:
+			stats_panel_ally.visible = false
+	
+	print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
 
 
 # =========================
@@ -457,11 +471,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	
 	# Toggle stats
 	if Input.is_action_just_pressed("toggle_stats"):
+		#envoie un signal qui est récupéré par l'UI_stats_navires associé à ce navire
 		emit_signal("sig_show_stats")
-		if not stats_visible:
-			show_stats()
-		else:
-			hide_all_ships_stats()
 	
 	# Pêche
 	if event.is_action_pressed("fish"):
@@ -573,7 +584,6 @@ func get_ship_at_position(pos: Vector2) -> Navires:
 			var distance = pos.distance_to(ship.global_position)
 			if distance <= ship.interaction_radius:
 				return ship
-	
 	return null
 
 
@@ -584,6 +594,7 @@ func hide_all_ships_stats():
 	for ship in all_ships:
 		if ship is Navires:
 			ship.hide_all_stats()
+			ship.hide_stats()
 
 
 # =========================
@@ -603,7 +614,6 @@ func _process(delta):
 	
 	# Pêche
 	_update_fishing(delta)
-	_update_fish_feedback(delta)
 	
 	# Déplacement (seulement pour le navire sélectionné)
 	if is_selected and is_moving and not path.is_empty():
@@ -624,7 +634,7 @@ func _process_movement(delta: float) -> void:
 		
 		if path.is_empty():
 			is_moving = false
-			show_arrow = false
+			show_arrow = false  # Cacher la flèche quand on arrive
 			queue_redraw()
 	else:
 		global_position += direction.normalized() * vitesse * delta
@@ -764,14 +774,13 @@ func try_start_fishing() -> void:
 	if not Map_utils.is_on_water(global_position):
 		return
 
+	# Déclenchement
+	sig_show_fishing.emit()
 	is_fishing = true
-	if fish_feedback_label:
-		fish_feedback_label.text = "🎣 Pêche..."
-		fish_feedback_label.visible = true
 	fish_timer = fish_duration
 	energie = max(energie - fish_energy_cost, 0)
 
-	show_stats()
+	#show_stats()
 
 
 func finish_fishing() -> void:
@@ -783,40 +792,10 @@ func finish_fishing() -> void:
 
 	nourriture += gain
 	if fish_feedback_label:
-		fish_feedback_label.text = "+%d 🐟" % gain
-		fish_feedback_label.visible = true
-	fish_feedback_timer = fish_feedback_duration
-	show_stats()
+		fish_feedback_label.finished_fishing(gain)
+		sig_show_stats.emit()
 
 
-func _init_fish_feedback() -> void:
-	fish_feedback_label = Label.new()
-	fish_feedback_label.visible = false
-	fish_feedback_label.text = "🎣 Pêche..."
-	fish_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	fish_feedback_label.add_theme_color_override("font_color", Color.WHITE)
-	fish_feedback_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	fish_feedback_label.add_theme_constant_override("outline_size", 6)
-
-	add_child(fish_feedback_label)
-	fish_feedback_label.position = Vector2(-30, -60)
-
-
-func _update_fish_feedback(delta: float) -> void:
-	if not fish_feedback_label:
-		return
-	
-	if is_fishing:
-		fish_feedback_label.visible = true
-		return
-
-	if fish_feedback_timer > 0.0:
-		fish_feedback_timer -= delta
-		if fish_feedback_timer <= 0.0:
-			fish_feedback_label.visible = false
-	else:
-		fish_feedback_label.visible = false
 
 
 # =========================
@@ -865,6 +844,53 @@ func get_neighbors(c: Vector2i) -> Array:
 		if n.x >= 0 and n.y >= 0 and n.x < Map_data.map_width and n.y < Map_data.map_height:
 			res.append(n)
 	return res
+
+# =========================
+# TIR
+# On va regarder s'il y a la portée, en regardant par rapport à ce que le bateau peut toucher
+func is_on_range(start: Vector2i, goal: Vector2i, limit: int) -> bool :
+	var chemin := calculer_chemin(start, goal)
+	var result := false
+	if len(chemin) < limit :
+		result = true
+	return result
+	
+# On retire les points de vie à quelqu'un qui se fait tirer dessus.
+func shoot(cible: Vector2):
+	# on convertit les coordonnées en coordonnées de cases
+	var case_cible : Vector2i = Map_utils.monde_vers_case(cible)
+	# on récupère la liste des bateaux qui sont sur cette position
+	var ships_on_pos: Array =data.getNavireByPosition(case_cible)
+	# on vérifie si il y a au moins un bateau dans la liste
+	if(not ships_on_pos.is_empty()):
+		# pour chaque bateau dans cette liste,
+		for bateau in ships_on_pos:
+			# on regarde si le bateau n'est pas celui du joueur
+			if(bateau.joueur_id != self.joueur_id):
+				# si le bateau n'est pas celui du joueur, alors on peut tirer
+				#TODO : mieux gérer la façon dont les dégâts sont infligés (avec une méthode c'est mieux, histoire de gérer le cas vie <= 0)
+				bateau.vie -= dgt_tir # vie du bateau - les dégâts = vie après attaque
+				bateau.show_stats()
+
+func show_stats():
+	print("stats showed")
+	emit_signal("sig_show_stats")
+
+# On vérifie la présence d'un bateau adverse sur la case ciblée.
+#TODO: renommer la fonction parce que c'est pas terrible
+func on_a_ship(cible: Vector2i) -> bool :
+	var result := false
+	# on récupère la liste des bateaux qui sont sur cette position
+	var ships_on_pos: Array =data.getNavireByPosition(cible)
+	# on vérifie si il y a au moins un bateau dans la liste
+	if(not ships_on_pos.is_empty()):
+		# pour chaque bateau dans cette liste,
+		for bateau in ships_on_pos:
+			# on regarde si le bateau n'est pas celui du joueur
+			if(bateau.joueur_id != self.joueur_id):
+				# si le bateau n'est pas celui du joueur, alors on peut tirer
+				result = true
+	return result
 
 
 # =========================
