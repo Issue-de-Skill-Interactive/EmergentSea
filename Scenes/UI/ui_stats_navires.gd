@@ -14,24 +14,18 @@ var stats_visible := false
 # UI STATS - DEUX PANNEAUX
 # =========================
 # Panneau pour navire allié (à droite)
-@export var stats_panel_ally: Panel
-var vie_label_ally: Label
-var energie_label_ally: Label
-var equipage_label_ally: Label
-var nourriture_label_ally: Label
+var stats_panel_ally: Panel
+var label_list_ally:Dictionary
 
 # Panneau pour navire ennemi (à gauche)
 var stats_panel_enemy: Panel
-var vie_label_enemy: Label
-var energie_label_enemy: Label
-var equipage_label_enemy: Label
-var nourriture_label_enemy: Label
+var label_list_enemy:Dictionary
 
 
 const stats_duration: float = 2.5
 
 #Couleurs Player
-const color_bg_player : Color = Color(0, 0.2, 0.4, 0.8)  # Bleu pour le joueur
+const color_bg_player : Color = Color(0, 0.2, 0.4, 0.9)  # Bleu pour le joueur
 const color_txt_player : Color = Color(0.5, 0.8, 1)
 
 #Couleurs Enemy
@@ -179,112 +173,109 @@ func update():
 
 func _create_ally_stats_panel():
 	"""Crée le panneau de stats pour les navires alliés (à droite)"""
-	stats_panel_ally = Panel.new()
-	stats_panel_ally.visible = false
-
-	stats_panel_ally.anchor_left = 1
-	stats_panel_ally.anchor_top = 0
-	stats_panel_ally.anchor_right = 1
-	stats_panel_ally.anchor_bottom = 0
-	stats_panel_ally.offset_left = -180
-	stats_panel_ally.offset_top = 20
-	stats_panel_ally.offset_right = -20
-	stats_panel_ally.offset_bottom = 110
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0.2, 0.4, 0.9)  # Bleu pour allié
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
+	stats_panel_ally=build_base()
+	attach_panel_to_right(stats_panel_ally)
+	attach_panel_to_top(stats_panel_ally)
+	var style := style_box(color_bg_player)
 	stats_panel_ally.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stats_panel_ally.add_child(vbox)
-
+	var vbox := build_vbox()
 	# Titre
-	var title_label := Label.new()
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var owner_name = navire.player_owner.player_name if navire.player_owner else "???"
-	title_label.text = "🚢 " + owner_name
-	title_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1))
-	vbox.add_child(title_label)
-
+	create_vbox_title(vbox,color_txt_player)
 	# Labels de stats
-	vie_label_ally = Label.new()
-	energie_label_ally = Label.new()
-	nourriture_label_ally = Label.new()
-	equipage_label_ally = Label.new()
-	
-	vie_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	energie_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equipage_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nourriture_label_ally.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	vbox.add_child(vie_label_ally)
-	vbox.add_child(energie_label_ally)
-	vbox.add_child(equipage_label_ally)
-	vbox.add_child(nourriture_label_ally)
-
+	label_list_ally=add_stats_to_vbox(vbox)
+	# On ajoute tout ça dans l'arbre des noeuds
+	stats_panel_ally.add_child(vbox)
 	ui_layer.add_child(stats_panel_ally)
-
 
 func _create_enemy_stats_panel():
 	"""Crée le panneau de stats pour les navires ennemis (à gauche)"""
-	stats_panel_enemy = Panel.new()
-	stats_panel_enemy.visible = false
+	stats_panel_enemy=build_base()
+	attach_panel_to_left(stats_panel_enemy)
+	attach_panel_to_top(stats_panel_enemy)
+	var style := style_box(color_bg_enemy)
+	stats_panel_enemy.add_theme_stylebox_override("panel", style)
+	var vbox = build_vbox()
+	# Titre
+	create_vbox_title(vbox,color_txt_enemy)
+	# Labels de stats
+	label_list_enemy=add_stats_to_vbox(vbox)
+	# On ajoute tout ça dans l'arbre des noeuds
+	stats_panel_enemy.add_child(vbox)
+	ui_layer.add_child(stats_panel_enemy)
 
-	stats_panel_enemy.anchor_left = 0
-	stats_panel_enemy.anchor_top = 0
-	stats_panel_enemy.anchor_right = 0
-	stats_panel_enemy.anchor_bottom = 0
-	stats_panel_enemy.offset_left = 20
-	stats_panel_enemy.offset_top = 20
-	stats_panel_enemy.offset_right = 180
-	stats_panel_enemy.offset_bottom = 110
+func build_base()->Panel:
+	var panel = Panel.new()
+	panel.visible = false
+	return panel
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.4, 0, 0, 0.9)  # Rouge pour ennemi
+func attach_panel_to_left(panel:Panel):
+	panel.anchor_left = 0
+	panel.anchor_right = 0
+	panel.offset_left = 20
+	panel.offset_right = 180
+
+func attach_panel_to_right(panel:Panel):
+	panel.anchor_left = 1
+	panel.anchor_right = 1
+	panel.offset_left = -180
+	panel.offset_right = -20
+
+func attach_panel_to_top(panel:Panel):
+	panel.anchor_top = 0
+	panel.anchor_bottom = 0
+	panel.offset_top = 20
+	panel.offset_bottom = 110
+
+func style_box(color:Color)->StyleBoxFlat:
+	var style = StyleBoxFlat.new()
+	style.bg_color = color
 	style.corner_radius_top_left = 6
 	style.corner_radius_top_right = 6
 	style.corner_radius_bottom_left = 6
 	style.corner_radius_bottom_right = 6
-	stats_panel_enemy.add_theme_stylebox_override("panel", style)
+	
+	return style
 
+func build_vbox()->VBoxContainer:
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stats_panel_enemy.add_child(vbox)
+	return vbox
 
-	# Titre
+func add_stats_to_vbox(vbox:VBoxContainer) -> Dictionary:
+	# Labels de stats
+	var labels_names = ["vie", "energie", "nourriture", "equipage"]
+	var labels : Dictionary = create_labels(labels_names)
+	for label:Label in labels.values():
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(label)
+	return labels
+
+func create_labels(names: Array) -> Dictionary:
+	var labels := {}
+	for element in names:
+		var label := Label.new()
+		labels[element] = label
+	return labels
+
+func create_vbox_title(vbox:VBoxContainer,color:Color):
 	var title_label := Label.new()
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var owner_name = navire.player_owner.player_name if navire.player_owner else "???"
-	title_label.text = "☠️ " + owner_name
-	title_label.add_theme_color_override("font_color", Color(1, 0.5, 0.5))
+	var text = ""
+	if(color == color_txt_enemy):
+		text += "☠️ "
+	elif(color == color_txt_player):
+		text += "🚢 "
+	else:
+		text += "❓ "
+	text+= owner_name
+	title_label.text = text
+	title_label.add_theme_color_override("font_color", color)
 	vbox.add_child(title_label)
 
-	# Labels de stats
-	vie_label_enemy = Label.new()
-	energie_label_enemy = Label.new()
-	nourriture_label_enemy = Label.new()
-	equipage_label_enemy = Label.new()
-	
-	vie_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	energie_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equipage_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nourriture_label_enemy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	vbox.add_child(vie_label_enemy)
-	vbox.add_child(energie_label_enemy)
-	vbox.add_child(equipage_label_enemy)
-	vbox.add_child(nourriture_label_enemy)
-
-	ui_layer.add_child(stats_panel_enemy)
 
 
 func show_stats():
@@ -318,19 +309,24 @@ func hide_all_stats():
 		stats_panel_enemy.visible = false
 
 
+
 func update_stats():
-	"""Met à jour l'affichage des stats"""
-	var is_ally = (navire.player_owner and navire.player_owner.is_human)
-	
-	if is_ally:
-		if vie_label_ally and energie_label_ally and equipage_label_ally:
-			vie_label_ally.text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
-			energie_label_ally.text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
-			equipage_label_ally.text = "👥 %d" % navire.nrbequipage
-			nourriture_label_ally.text = "🐟 %d" % navire.nourriture
-	else:
-		if vie_label_enemy and energie_label_enemy and equipage_label_enemy:
-			vie_label_enemy.text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
-			energie_label_enemy.text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
-			equipage_label_enemy.text = "👥 %d" % navire.nrbequipage
-			nourriture_label_enemy.text = "🐟 %d" % navire.nourriture
+	"""Met à jour l'affichage des stats"""	
+	if label_list_ally:
+		if(label_list_ally.has("vie")):
+			label_list_ally["vie"].text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
+		if(label_list_ally.has("energie")):
+			label_list_ally["energie"].text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
+		if(label_list_ally.has("equipage")):
+			label_list_ally["equipage"].text = "👥 %d" % navire.nrbequipage
+		if(label_list_ally.has("nourriture")):
+			label_list_ally["nourriture"].text = "🐟 %d" % navire.nourriture
+	if label_list_enemy:
+		if(label_list_enemy.has("vie")):
+			label_list_enemy["vie"].text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
+		if(label_list_enemy.has("energie")):
+			label_list_enemy["energie"].text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
+		if(label_list_enemy.has("equipage")):
+			label_list_enemy["equipage"].text = "👥 %d" % navire.nrbequipage
+		if(label_list_enemy.has("nourriture")):
+			label_list_enemy["nourriture"].text = "🐟 %d" % navire.nourriture

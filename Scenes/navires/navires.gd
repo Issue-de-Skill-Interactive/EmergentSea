@@ -174,10 +174,10 @@ func _setup_input_handling() -> void:
 		stats_panel = await UI_stats_navire.new(self)
 		fish_feedback_label = UI_fish_navires.new(self)
 		#_init_stats_ui()
-	else:
-		# Masquer uniquement le panneau allié si ce navire est désélectionné
-		if stats_panel.stats_panel_ally:
-			stats_panel.stats_panel_ally.visible = false
+	#else:
+		## Masquer uniquement le panneau allié si ce navire est désélectionné
+		#if stats_panel.stats_panel_ally:
+			#stats_panel.stats_panel_ally.visible = false
 	
 	#print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
 
@@ -230,9 +230,10 @@ func set_selected(selected: bool) -> void:
 		# Afficher les stats du navire sélectionné
 		stats_panel.show_stats()
 	else:
-		# Masquer uniquement le panneau allié si ce navire est désélectionné
-		if stats_panel.stats_panel_ally:
-			stats_panel.stats_panel_ally.visible = false
+		stats_panel.hide_all_stats()
+		## Masquer uniquement le panneau allié si ce navire est désélectionné
+		#if stats_panel.stats_panel_ally:
+			#stats_panel.stats_panel_ally.visible = false
 	
 	print(">>> Navire %d %s" % [id, "SÉLECTIONNÉ" if selected else "désélectionné"])
 
