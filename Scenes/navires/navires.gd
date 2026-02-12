@@ -228,7 +228,7 @@ func set_selected(selected: bool) -> void:
 	if selected and player_owner and player_owner.is_human:
 		_setup_camera()
 		# Afficher les stats du navire sélectionné
-		show_stats()
+		stats_panel.show_stats()
 	else:
 		# Masquer uniquement le panneau allié si ce navire est désélectionné
 		if stats_panel.stats_panel_ally:
@@ -254,7 +254,7 @@ func take_damage(damage: int) -> void:
 	emit_signal("sig_navire_damaged", self, damage)
 	
 	# Afficher les stats du navire touché (ennemi)
-	show_stats()
+	stats_panel.show_stats()
 	
 	if vie <= 0:
 		die()
@@ -277,7 +277,7 @@ func die() -> void:
 	
 	# Masquer le feedback de pêche
 	if fish_feedback_label and is_instance_valid(fish_feedback_label):
-		fish_feedback_label.visible = false
+		fish_feedback_label.hide()
 	
 	# Notifier le propriétaire
 	if player_owner != null and player_owner.has_method("remove_navire"):
@@ -294,7 +294,7 @@ func heal(amount: int) -> void:
 		return
 	vie = min(vie + amount, maxvie)
 	if is_selected:
-		show_stats()
+		stats_panel.show_stats()
 
 
 func reset_energie() -> void:
@@ -347,7 +347,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Toggle stats
 	if Input.is_action_just_pressed("toggle_stats"):
 		#envoie un signal qui est récupéré par l'UI_stats_navires associé à ce navire
-		emit_signal("sig_show_stats")
+		#emit_signal("sig_show_stats")
+		sig_show_stats.emit()
 	
 	# Pêche
 	if event.is_action_pressed("fish"):
@@ -410,7 +411,7 @@ func attempt_shoot(target_case: Vector2i) -> void:
 	if hit_count > 0:
 		energie = max(energie - 20, 0)
 		print("Tir effectué sur %d cible(s)!" % hit_count)
-		show_stats()  # Mise à jour de nos stats
+		stats_panel.show_stats()  # Mise à jour de nos stats
 	else:
 		print("Aucun ennemi sur cette case!")
 
@@ -481,11 +482,12 @@ func _process(delta):
 		queue_redraw()
 	
 	# Timer UI stats
-	if stats_visible:
-		stats_timer -= delta
-		stats_panel.update_stats()
-		if stats_timer <= 0:
-			stats_panel.hide_all_stats()
+	#if stats_visible:
+		#stats_timer -= delta
+		##stats_panel.update_stats()
+		#if stats_timer <= 0:
+			##stats_panel.hide_all_stats()
+			
 	
 	# Pêche
 	_update_fishing(delta)
@@ -609,7 +611,7 @@ func try_start_fishing() -> void:
 	fish_timer = fish_duration
 	energie = max(energie - fish_energy_cost, 0)
 
-	#show_stats()
+	stats_panel.show_stats()
 
 
 func finish_fishing() -> void:
@@ -704,7 +706,8 @@ func shoot(cible: Vector2):
 
 func show_stats():
 	print("stats showed")
-	emit_signal("sig_show_stats")
+	sig_show_stats.emit()
+	#emit_signal("sig_show_stats")
 
 # On vérifie la présence d'un bateau adverse sur la case ciblée.
 #TODO: renommer la fonction parce que c'est pas terrible

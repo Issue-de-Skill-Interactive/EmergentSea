@@ -140,9 +140,13 @@ func build_ui():
 
 func handler():
 	if isVisible():
-		hide()
+		#hide()
+		hide_all_stats()
+		print("caché")
 	else:
-		show()
+		#show()
+		show_stats()
+		print("visible")
 
 func show():
 	if not stats_panel:
