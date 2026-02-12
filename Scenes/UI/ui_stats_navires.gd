@@ -2,11 +2,6 @@ class_name UI_stats_navire
 extends Node
 
 var navire : Navires
-var stats_panel : Panel
-var vie_label: Label
-var energie_label: Label
-var equipage_label: Label
-var nourriture_label: Label
 var stats_timer := 0.0
 var stats_visible := false
 
@@ -48,7 +43,7 @@ func _process(delta):
 		stats_timer -= delta
 		update()
 		if stats_timer <= 0:
-			hide()
+			hide_all_stats()
 
 func isVisible() -> bool:
 	return stats_visible
@@ -69,13 +64,10 @@ func build_ui():
 
 func handler():
 	if isVisible():
-		#hide()
 		hide_all_stats()
-		print("caché")
 	else:
-		#show()
+		stats_timer = stats_duration
 		show_ally()
-		print("visible")
 
 func show_enemy():
 	update_stats(label_list_enemy)
@@ -91,31 +83,9 @@ func hide_ally():
 	stats_panel_ally.visible=false
 	stats_visible=false
 
-func show():
-	if not stats_panel:
-		push_warning("ATTENTION : Pas de stats_panel pour afficher les stats!")
-		return
-		
-	stats_visible = true
-	stats_timer = stats_duration
-	stats_panel.visible = true
-	update()
-
-func hide():
-	if not stats_panel:
-		return
-		
-	stats_visible = false
-	stats_panel.visible = false
-
 func update():
-	if not stats_panel or not vie_label or not energie_label or not equipage_label:
-		return
-		
-	vie_label.text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
-	energie_label.text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
-	equipage_label.text = "👥 %d" % navire.nrbequipage
-	nourriture_label.text = "🐟 %d" % navire.nourriture
+	update_stats(label_list_ally)
+	update_stats(label_list_enemy)
 
 
 
@@ -152,6 +122,7 @@ func _create_enemy_stats_panel():
 	stats_panel_enemy.add_child(vbox)
 	ui_layer.add_child(stats_panel_enemy)
 
+#region build panel tools
 func build_base()->Panel:
 	var panel = Panel.new()
 	panel.visible = false
@@ -223,9 +194,7 @@ func create_vbox_title(vbox:VBoxContainer,color:Color):
 	title_label.text = text
 	title_label.add_theme_color_override("font_color", color)
 	vbox.add_child(title_label)
-
-
-
+#endregion build panel tools
 
 func show_stats():
 	"""Affiche les stats du navire dans le bon panneau"""
@@ -245,7 +214,6 @@ func show_stats():
 			show_enemy()
 			update_stats(label_list_enemy)
 
-
 func hide_all_stats():
 	"""Masque tous les panneaux de stats de ce navire"""
 	stats_visible = false
@@ -255,8 +223,6 @@ func hide_all_stats():
 	
 	if stats_panel_enemy:
 		hide_enemy()
-
-
 
 func update_stats(label_list:Dictionary):
 	"""Met à jour l'affichage des stats"""	
@@ -269,12 +235,3 @@ func update_stats(label_list:Dictionary):
 			label_list["equipage"].text = "👥 %d" % navire.nrbequipage
 		if(label_list.has("nourriture")):
 			label_list["nourriture"].text = "🐟 %d" % navire.nourriture
-	#if label_list_enemy:
-		#if(label_list_enemy.has("vie")):
-			#label_list_enemy["vie"].text = "❤️ %d / %d" % [navire.vie, navire.maxvie]
-		#if(label_list_enemy.has("energie")):
-			#label_list_enemy["energie"].text = "⚡ %d / %d" % [navire.energie, navire.maxenergie]
-		#if(label_list_enemy.has("equipage")):
-			#label_list_enemy["equipage"].text = "👥 %d" % navire.nrbequipage
-		#if(label_list_enemy.has("nourriture")):
-			#label_list_enemy["nourriture"].text = "🐟 %d" % navire.nourriture
