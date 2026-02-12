@@ -2,7 +2,8 @@ class_name UI_stats_navire
 extends Node
 
 var navire : Navires
-var stats_timer := 0.0
+var ui_layer: CanvasLayer
+
 var stats_visible := false
 
 # =========================
@@ -16,8 +17,9 @@ var label_list_ally:Dictionary
 var stats_panel_enemy: Panel
 var label_list_enemy:Dictionary
 
-
+# timer pour faire disparaître les panels
 const stats_duration: float = 2.5
+var stats_timer := 0.0
 
 #Couleurs Player
 const color_bg_player : Color = Color(0, 0.2, 0.4, 0.9)  # Bleu pour le joueur
@@ -27,8 +29,6 @@ const color_txt_player : Color = Color(0.5, 0.8, 1)
 const color_bg_enemy : Color = Color(0.4, 0, 0, 0.8)  # Rouge pour l'ennemi
 const color_txt_enemy : Color = Color(1, 0.5, 0.5)
 
-var ui_layer: CanvasLayer
-
 
 func _init(ship : Navires) -> void:
 	self.navire = ship
@@ -36,7 +36,6 @@ func _init(ship : Navires) -> void:
 	navire.sig_show_stats.connect(handler)
 	
 	build_ui()
-	
 
 func _process(delta):
 	if isVisible():
@@ -45,23 +44,6 @@ func _process(delta):
 		if stats_timer <= 0:
 			hide_all_stats()
 
-func isVisible() -> bool:
-	return stats_visible
-
-func build_ui():
-	await get_tree().process_frame
-	ui_layer = get_tree().get_first_node_in_group("ui_layer")
-	if not ui_layer:
-		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
-		return
-
-	# Créer le panneau allié (à droite)
-	_create_ally_stats_panel()
-	
-	# Créer le panneau ennemi (à gauche)
-	_create_enemy_stats_panel()
-
-
 func handler():
 	if isVisible():
 		hide_all_stats()
@@ -69,26 +51,20 @@ func handler():
 		stats_timer = stats_duration
 		show_ally()
 
-func show_enemy():
-	update_stats(label_list_enemy)
-	stats_panel_enemy.visible=true
-func show_ally():
-	update_stats(label_list_ally)
-	if(stats_panel_ally):
-		stats_panel_ally.visible=true
-		stats_visible=true
-func hide_enemy():
-	stats_panel_enemy.visible=false
-func hide_ally():
-	stats_panel_ally.visible=false
-	stats_visible=false
+func isVisible() -> bool:
+	return stats_visible
 
-func update():
-	update_stats(label_list_ally)
-	update_stats(label_list_enemy)
-
-
-
+#region crafting
+func build_ui():
+	await get_tree().process_frame
+	ui_layer = get_tree().get_first_node_in_group("ui_layer")
+	if not ui_layer:
+		push_error("ERREUR : ui_layer est null, impossible de créer l'UI des stats!")
+		return
+	# Créer le panneau allié (à droite)
+	_create_ally_stats_panel()
+	# Créer le panneau ennemi (à gauche)
+	_create_enemy_stats_panel()
 
 func _create_ally_stats_panel():
 	"""Crée le panneau de stats pour les navires alliés (à droite)"""
@@ -121,6 +97,7 @@ func _create_enemy_stats_panel():
 	# On ajoute tout ça dans l'arbre des noeuds
 	stats_panel_enemy.add_child(vbox)
 	ui_layer.add_child(stats_panel_enemy)
+#endregion crafting
 
 #region build panel tools
 func build_base()->Panel:
@@ -196,6 +173,24 @@ func create_vbox_title(vbox:VBoxContainer,color:Color):
 	vbox.add_child(title_label)
 #endregion build panel tools
 
+#region show/hide
+func show_enemy():
+	update_stats(label_list_enemy)
+	stats_panel_enemy.visible=true
+
+func show_ally():
+	update_stats(label_list_ally)
+	if(stats_panel_ally):
+		stats_panel_ally.visible=true
+		stats_visible=true
+
+func hide_enemy():
+	stats_panel_enemy.visible=false
+
+func hide_ally():
+	stats_panel_ally.visible=false
+	stats_visible=false
+
 func show_stats():
 	"""Affiche les stats du navire dans le bon panneau"""
 	stats_timer = stats_duration
@@ -223,6 +218,12 @@ func hide_all_stats():
 	
 	if stats_panel_enemy:
 		hide_enemy()
+#endregion show/hide
+
+#region updates
+func update():
+	update_stats(label_list_ally)
+	update_stats(label_list_enemy)
 
 func update_stats(label_list:Dictionary):
 	"""Met à jour l'affichage des stats"""	
@@ -235,3 +236,4 @@ func update_stats(label_list:Dictionary):
 			label_list["equipage"].text = "👥 %d" % navire.nrbequipage
 		if(label_list.has("nourriture")):
 			label_list["nourriture"].text = "🐟 %d" % navire.nourriture
+#endregion updates
