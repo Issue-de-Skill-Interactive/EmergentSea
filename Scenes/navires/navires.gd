@@ -154,7 +154,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if energie > 0 and not is_moving and not is_fishing:
 				if Map_utils.is_on_water(mouse_pos):
-					path = calculer_chemin(case_actuelle, Map_utils.monde_vers_case(mouse_pos))
+					path = Pathfinder.calculer_chemin(case_actuelle, Map_utils.monde_vers_case(mouse_pos))
 					if not path.is_empty():
 						is_moving = true
 						target_position = mouse_pos  # Mémoriser la position cible
@@ -205,19 +205,31 @@ func _process(delta):
 	if is_player_ship and is_moving and not path.is_empty():
 		var next_case = path[0]
 		var next_pos: Vector2 = Map_utils.case_vers_monde(next_case)
-		var direction := next_pos - global_position
-
-		if direction.length() < 5:
-			global_position = next_pos
+		
+		global_position = global_position.move_toward(next_pos, vitesse * delta)
+		# Si on est arrivé exactement sur le centre (ou presque)
+		if global_position.distance_to(next_pos) < 0.1: 
 			path.remove_at(0)
 			case_actuelle = next_case
 			energie = max(energie - 1, 0)
+			
 			if path.is_empty():
 				is_moving = false
-				show_arrow = false  # Cacher la flèche quand on arrive
+				show_arrow = false
 				queue_redraw()
-		else:
-			global_position += direction.normalized() * vitesse * delta
+		#var direction := next_pos - global_position
+#
+		#if direction.length() < 5:
+			#global_position = next_pos
+			#path.remove_at(0)
+			#case_actuelle = next_case
+			#energie = max(energie - 1, 0)
+			#if path.is_empty():
+				#is_moving = false
+				#show_arrow = false  # Cacher la flèche quand on arrive
+				#queue_redraw()
+		#else:
+			#global_position += direction.normalized() * vitesse * delta
 
 
 # =========================
@@ -310,6 +322,7 @@ func finish_fishing() -> void:
 # =========================
 # A* PATHFINDING (pour tous les navires)
 func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
+	print("berk")
 	var open_set := [start]
 	var came_from := {}
 	var g_score := { start: 0 }
@@ -359,7 +372,7 @@ func get_neighbors(c: Vector2i) -> Array:
 # TIR
 # On va regarder s'il y a la portée, en regardant par rapport à ce que le bateau peut toucher
 func is_on_range(start: Vector2i, goal: Vector2i, limit: int) -> bool :
-	var chemin := calculer_chemin(start, goal)
+	var chemin := Pathfinder.calculer_chemin(start, goal)
 	var result := false
 	if len(chemin) < limit :
 		result = true

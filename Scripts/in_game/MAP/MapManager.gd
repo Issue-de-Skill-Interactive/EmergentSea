@@ -26,7 +26,8 @@ func _ready():
 		print(">>> Map générée")
 		grid.generate_hex_grid_rectangular()
 		grid.import_from_map_data()
-		grid.spawn_all_tiles(self)
+		render_map_from_grid()
+		#grid.spawn_all_tiles(self)
 		#render_map()
 		print(">>> Rendu de la map effectué")
 		#permet de signaler au moteur que la map est générée
@@ -34,6 +35,35 @@ func _ready():
 		emit_signal("map_generated")
 	pass
 
+# =========================
+# Rendering Refactorisé
+# =========================
+func render_map_from_grid():
+	# On itère sur toutes les cellules stockées dans le dictionnaire
+	for cell in grid.cells.values():
+		spawn_tile_object(cell)
+
+func spawn_tile_object(cell: HexCell):
+	var s := Sprite2D.new()
+	
+	s.centered = true
+	# On récupère le type depuis la cellule, plus besoin de Map_data.tiles[y][x]
+	match cell.terrain_type:
+		"deepwater": s.texture = Map_data.TileDeepWater
+		"water": s.texture = Map_data.TileWater
+		"sand": s.texture = Map_data.TileSand
+		"earth": s.texture = Map_data.TileEarth
+		"forest": s.texture = Map_data.TileForest
+		"mountain": s.texture = Map_data.TileMountain
+
+	# Utilisation des coordonnées offset stockées dans la cellule
+	s.position = Map_utils.hex_to_pixel_iso(cell.offset_coords.x, cell.offset_coords.y)
+	#print(cell.offset_coords)
+	
+	# Optionnel : Stocker une référence du sprite dans la cellule pour y accéder plus tard
+	# cell.visual_node = s 
+	
+	add_child(s)
 
 # =========================
 # Rendering
