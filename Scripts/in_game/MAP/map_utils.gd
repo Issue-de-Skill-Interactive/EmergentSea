@@ -163,31 +163,30 @@ static func get_neighbors(c: Vector2i) -> Array[Vector2i]:
 	if c.x % 2 == 0:
 		# Colonne PAIRE (Even)
 		# Note: En Odd-Q, les colonnes paires sont "plus hautes" visuellement que les impaires
+		
 		directions = [
-			Vector2i(0, -1),  # Nord
-			Vector2i(1, -1),  # Nord-Est (on monte car on va vers la colonne décalée basse)
+			Vector2i(-1, -1),  # Nord-Ouest
+			Vector2i(1, -1),  # Nord-Est
+			Vector2i(2, 0),  # Est
 			Vector2i(1, 0),   # Sud-Est
-			Vector2i(0, 1),   # Sud
-			Vector2i(-1, 0),  # Sud-Ouest
-			Vector2i(-1, -1)  # Nord-Ouest
+			Vector2i(-1, 0),   # Sud-Ouest
+			Vector2i(-2, 0)  # Ouest
 		]
 	else:
 		# Colonne IMPAIRE (Odd) - Décalée vers le bas (+Y visuel)
 		directions = [
-			Vector2i(0, -1),  # Nord
-			Vector2i(1, 0),   # Nord-Est (reste sur la ligne visuelle)
-			Vector2i(1, 1),   # Sud-Est (on descend)
-			Vector2i(0, 1),   # Sud
+			Vector2i(-1, 0),  # Nord-Ouest
+			Vector2i(1, 0),   # Nord-Est
+			Vector2i(2, 0),   # Est
+			Vector2i(1, 1),   # Sud-Est
 			Vector2i(-1, 1),  # Sud-Ouest
-			Vector2i(-1, 0)   # Nord-Ouest
+			Vector2i(-2, 0)   # Ouest
 		]
-
 	for d in directions:
 		var neighbor = c + d
 		# On utilise votre vérification existante qui est très bien
 		if is_case_navigable(neighbor):
 			res.append(neighbor)
-			
 	return res
 
 # Nouvelle fonction pour gérer le coût du terrain
