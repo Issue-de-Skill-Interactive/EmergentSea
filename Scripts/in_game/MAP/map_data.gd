@@ -25,8 +25,8 @@ static var TilePort: Texture2D = preload("res://textures/tiles/TilePort.png")
 # =========================
 # Map parameters
 # =========================
-static var map_width : int = 64
-static var map_height : int = 32
+static var map_width : int = 32
+static var map_height : int = 16
 static var hex_width : int = 512
 static var hex_height : int = 256
 
