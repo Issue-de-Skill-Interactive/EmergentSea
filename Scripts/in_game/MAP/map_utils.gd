@@ -136,46 +136,57 @@ static func get_random_ocean_position() -> Vector2:
 	return pos
 
 # Calcule la distance réelle en cases entre deux hexagones (offset coords)
+# ============================================================
+# CALCUL DE DISTANCE
+# ============================================================
 static func get_hex_distance(a: Vector2i, b: Vector2i) -> int:
-	# 1. On convertit les coordonnées Offset (col, row) en Axial (q, r)
-	# On reprend la formule de ton HexGrid.gd
-	var aq = a.x - int((a.y - (a.y % 2)) / 2)
-	var ar = a.y
+	# 1. Conversion Offset -> Axial (Version Pointy Top / Odd-Q)
+	# On doit utiliser la même logique que HexGrid.offset_to_axial
+	var aq = a.x
+	var ar = a.y - (a.x - (a.x & 1)) / 2
+	var as_coord = -aq - ar
 	
-	var bq = b.x - int((b.y - (b.y % 2)) / 2)
-	var br = b.y
+	var bq = b.x
+	var br = b.y - (b.x - (b.x & 1)) / 2
+	var bs_coord = -bq - br
 	
-	# 2. On calcule la distance en coordonnées axiales
-	# La distance est la moitié de la somme des différences absolues
-	# (équivalent de la distance Manhattan en 3D cubique)
-	var d_q = abs(aq - bq)
-	var d_r = abs(ar - br)
-	var d_s = abs((-aq - ar) - (-bq - br))
-	
-	return int((d_q + d_r + d_s) / 2)
+	# 2. Distance Manhattan cubique
+	return int((abs(aq - bq) + abs(ar - br) + abs(as_coord - bs_coord)) / 2)
 
 
 static func get_neighbors(c: Vector2i) -> Array[Vector2i]:
 	var res: Array[Vector2i] = []
 	
-	# 1. Conversion Offset -> Axial (Maths pures)
-	# Note: On réutilise la logique de ta grille ici pour éviter une dépendance circulaire
-	var q = c.x - int((c.y - (c.y % 2)) / 2)
-	var r = c.y
+	# Pour du Pointy-Top (Odd-Q), le décalage dépend de la COLONNE (X)
+	var directions
 	
-	for d in _axial_directions:
-		# 2. Application du voisin en Axial
-		var neighbor_q = q + d.x
-		var neighbor_r = r + d.y
-		
-		# 3. Conversion Axial -> Offset (Retour vers le système de stockage)
-		var col = neighbor_q + int((neighbor_r - (neighbor_r % 2)) / 2)
-		var row = neighbor_r
-		var neighbor_offset = Vector2i(col, row)
-		
-		# 4. Vérifications
-		if is_case_navigable(neighbor_offset):
-			res.append(neighbor_offset)
+	if c.x % 2 == 0:
+		# Colonne PAIRE (Even)
+		# Note: En Odd-Q, les colonnes paires sont "plus hautes" visuellement que les impaires
+		directions = [
+			Vector2i(0, -1),  # Nord
+			Vector2i(1, -1),  # Nord-Est (on monte car on va vers la colonne décalée basse)
+			Vector2i(1, 0),   # Sud-Est
+			Vector2i(0, 1),   # Sud
+			Vector2i(-1, 0),  # Sud-Ouest
+			Vector2i(-1, -1)  # Nord-Ouest
+		]
+	else:
+		# Colonne IMPAIRE (Odd) - Décalée vers le bas (+Y visuel)
+		directions = [
+			Vector2i(0, -1),  # Nord
+			Vector2i(1, 0),   # Nord-Est (reste sur la ligne visuelle)
+			Vector2i(1, 1),   # Sud-Est (on descend)
+			Vector2i(0, 1),   # Sud
+			Vector2i(-1, 1),  # Sud-Ouest
+			Vector2i(-1, 0)   # Nord-Ouest
+		]
+
+	for d in directions:
+		var neighbor = c + d
+		# On utilise votre vérification existante qui est très bien
+		if is_case_navigable(neighbor):
+			res.append(neighbor)
 			
 	return res
 
@@ -224,3 +235,21 @@ static func get_movement_cost(c: Vector2i) -> float:
 		#res.append(n)
 		#
 	#return res
+
+
+# Pour la génération uniquement : on veut savoir si on peut "étendre" l'océan
+static func get_neighbors_water_only(c: Vector2i) -> Array[Vector2i]:
+	var res: Array[Vector2i] = []
+	var directions
+	
+	if c.x % 2 == 0:
+		directions = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(1, -1), Vector2i(1, 0), Vector2i(-1, -1), Vector2i(-1, 0)]
+	else:
+		directions = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(1, 0), Vector2i(1, 1), Vector2i(-1, 0), Vector2i(-1, 1)]
+
+	for d in directions:
+		var n = c + d
+		# ICI : On vérifie juste si c'est dans la map et si c'est de l'eau
+		if is_case_valid(n) and is_case_water(n):
+			res.append(n)
+	return res

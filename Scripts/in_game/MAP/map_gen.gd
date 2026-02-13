@@ -147,29 +147,26 @@ func compute_ocean_cases() -> void:
 	var visited := {}
 	var queue := []
 
-	# Start from all border tiles
+	# 1. On initialise avec les bordures
 	for x in range(Map_data.map_width):
 		queue.append(Vector2i(x, 0))
 		queue.append(Vector2i(x, Map_data.map_height - 1))
-
 	for y in range(Map_data.map_height):
 		queue.append(Vector2i(0, y))
 		queue.append(Vector2i(Map_data.map_width - 1, y))
 
 	while queue.size() > 0:
 		var c: Vector2i = queue.pop_front()
-		if visited.has(c):
-			continue
+		if visited.has(c): continue
 		visited[c] = true
-		if not Map_utils.is_case_water(c):
-			continue
+		
+		# On ne traite que si c'est de l'eau
+		if not Map_utils.is_case_water(c): continue
+		
 		Map_data.ocean_cases.append(c)
-		var neighbors = [
-			Vector2i(c.x + 1, c.y),
-			Vector2i(c.x - 1, c.y),
-			Vector2i(c.x, c.y + 1),
-			Vector2i(c.x, c.y - 1)
-		]
+		
+		# 2. UTILISE LA NOUVELLE FONCTION ICI
+		var neighbors = Map_utils.get_neighbors_water_only(c)
 		for n in neighbors:
-			if Map_utils.is_case_valid(n) and not visited.has(n):
+			if not visited.has(n):
 				queue.append(n)

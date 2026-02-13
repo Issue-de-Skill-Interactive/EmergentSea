@@ -44,14 +44,15 @@ func get_cell(q: int, r: int, s: int) -> HexCell:
 # Convertit les coordonnées de grille (col, row) en mathématiques (q, r)
 # Pour une grille Pointy-Top (décalage vertical des colonnes impaires)
 func offset_to_axial(col: int, row: int) -> Vector2:
-	var q = col - floor(row / 2.0)
-	var r = row
+	var q = col
+	# La formule magique pour Odd-Q (Pointy Top)
+	var r = row - (col - (col & 1)) / 2
 	return Vector2(q, r)
 
 func axial_to_offset(q: int, r: int) -> Vector2:
-	# Formule Odd-R inverse
-	var col = q + (r - (r & 1)) / 2
-	var row = r
+	var col = q
+	# Inverse de la formule Odd-Q
+	var row = r + (q - (q & 1)) / 2
 	return Vector2(col, row)
 
 # Dans generate_hex_grid_rectangular, assure-toi que s est toujours calculé ainsi :

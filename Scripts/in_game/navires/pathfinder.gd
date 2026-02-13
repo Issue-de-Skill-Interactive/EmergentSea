@@ -40,7 +40,10 @@ static func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
 			if tentative_g < g_score.get(neighbor, INF):
 				came_from[neighbor] = current
 				g_score[neighbor] = tentative_g
-				var f = tentative_g + Map_utils.get_hex_distance(neighbor, goal)
+				var h = float(Map_utils.get_hex_distance(neighbor, goal))
+				# On multiplie par un très petit facteur (ex: 1.001) pour préférer 
+				# naturellement les chemins directs et éviter l'exploration asymétrique
+				var f = tentative_g + (h * 1.001)
 				
 				# Gestion de la liste ouverte
 				if not open_set_hash.has(neighbor):
