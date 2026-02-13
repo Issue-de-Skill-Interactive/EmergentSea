@@ -24,6 +24,10 @@ var is_player_controlled: bool = false
 ## Indique si ce navire est actuellement sélectionné
 var is_selected: bool = false
 
+# AJOUT : Visibilité basée sur le fog of war
+var is_visible_to_human: bool = true  # true par défaut pour les navires du joueur
+var fog_of_war_ref: FogOfWar = null
+
 
 # =========================
 # TEXTURES
@@ -146,6 +150,11 @@ func _ready():
 	fog_manager = get_tree().get_first_node_in_group("fog_manager")
 	if fog_manager:
 		print(">>> Navire [%d] - FogManager connecté" % id)
+	
+	# AJOUT : Récupérer le FogOfWar pour vérifier la visibilité
+	fog_of_war_ref = get_tree().get_first_node_in_group("fog_of_war")
+	if fog_of_war_ref:
+		print(">>> Navire [%d] - FogOfWar connecté pour visibilité" % id)
 	
 	# Debug
 	var owner_name = player_owner.player_name if player_owner else "AUCUN"
@@ -485,6 +494,10 @@ func _process(delta):
 	# Déplacement (pour TOUS les navires en mouvement, pas juste le sélectionné)
 	if is_moving and not path.is_empty():
 		_process_movement(delta)
+	
+	# AJOUT : Mettre à jour la visibilité dans le fog (pour navires ennemis)
+	if player_owner and not player_owner.is_human:
+		_update_visibility_in_fog()
 
 
 func _process_movement(delta: float) -> void:
@@ -535,6 +548,10 @@ func _process_movement(delta: float) -> void:
 				print("    Raison: pas de player_owner")
 			if player_owner and not player_owner.is_human:
 				print("    Raison: player_owner n'est pas humain")
+		
+		# AJOUT : Mise à jour de la visibilité pour navires ennemis
+		if player_owner and not player_owner.is_human:
+			_update_visibility_in_fog()
 		
 		if path.is_empty():
 			is_moving = false
@@ -589,6 +606,33 @@ func _update_fog_of_war() -> void:
 			print(">>> [NAVIRE %d] ✗ FogOfWar n'a pas la méthode reveal_around_position !" % id)
 	else:
 		print(">>> [NAVIRE %d] ✗ FogOfWar introuvable !" % id)
+
+
+# =========================
+# VISIBILITÉ DANS LE FOG
+# =========================
+func _update_visibility_in_fog() -> void:
+	"""Met à jour la visibilité de ce navire basée sur le fog of war"""
+	
+	# Les navires du joueur humain sont toujours visibles
+	if player_owner and player_owner.is_human:
+		is_visible_to_human = true
+		visible = true
+		return
+	
+	# Pour les navires ennemis, vérifier s'ils sont dans le fog
+	if not fog_of_war_ref or not fog_of_war_ref.has_method("is_tile_visible"):
+		# Pas de fog = tout visible par défaut
+		is_visible_to_human = true
+		visible = true
+		return
+	
+	# Vérifier si la case du navire est visible
+	var is_case_visible = fog_of_war_ref.is_tile_visible(case_actuelle)
+	
+	# Mettre à jour la visibilité
+	is_visible_to_human = is_case_visible
+	visible = is_case_visible
 
 
 # =========================
