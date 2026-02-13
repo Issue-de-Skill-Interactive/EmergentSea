@@ -11,34 +11,30 @@ func _init():
 # Hex → Iso conversion
 # =========================
 static func hex_to_pixel_iso(q: int, r: int) -> Vector2:
-	var x := q * (Map_data.hex_width * 0.75 - 65)
-	var y := r * (74 + 128 + 1)
+	var cx = q * (Map_data.hex_width * 0.5)
+	var cy = r * (Map_data.hex_height + 150)
 	if q % 2 == 1:
-		y += 101
-	return Vector2(x, y)
+		cy += Map_data.hex_height - 51
+	return Vector2(cx, cy)
 
 
 # =========================
 # CONVERSIONS COORDONNEES
 static func monde_vers_case(pos: Vector2) -> Vector2i:
-	var x = pos.x
+	var col_width = Map_data.hex_width * 0.5
+	var row_height = Map_data.hex_height + 150
+	var offset = Map_data.hex_height - 51
+	var q = int(round(pos.x / col_width))
 	var y = pos.y
-	var q = int(round(x / (Map_data.hex_width * 0.75 - 65)))
 	if q % 2 == 1:
-		y -= 101
-	var r = int(round(y / (74 + 128 + 1)))
+		y -= offset
+	var r = int(round(y / row_height))
 	return Vector2i(q, r)
 
 
 
 static func case_vers_monde(c: Vector2i) -> Vector2:
-	var q = c.x
-	var r = c.y
-	var x = q * (Map_data.hex_width * 0.75 - 65)
-	var y = r * (74 + 128 + 1)
-	if q % 2 == 1:
-		y += 101
-	return Vector2(x, y)
+	return hex_to_pixel_iso(c.x, c.y)
 
 # ============================================================
 #  VALIDITY CHECKS
