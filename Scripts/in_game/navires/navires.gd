@@ -353,7 +353,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			
 			if energie > 0 and not is_moving and not is_fishing:
 				if Map_utils.is_on_water(mouse_pos):
-					path = calculer_chemin(case_actuelle, Map_utils.monde_vers_case(mouse_pos))
+					path = Pathfinder.calculer_chemin(case_actuelle, Map_utils.monde_vers_case(mouse_pos))
 					if not path.is_empty():
 						is_moving = true
 						target_position = mouse_pos
