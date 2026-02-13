@@ -55,6 +55,17 @@ func spawn_tile_object(cell: HexCell):
 		"earth": s.texture = Map_data.TileEarth
 		"forest": s.texture = Map_data.TileForest
 		"mountain": s.texture = Map_data.TileMountain
+		"port": 
+			# Vérifier si TilePort existe dans Map_data
+			if "TilePort" in Map_data:
+				s.texture = Map_data.TilePort
+			else:
+				# Fallback: utiliser une texture de sable si TilePort n'existe pas
+				s.texture = Map_data.TileSand
+				print("Attention: TilePort non trouvé, utilisation de TileSand")
+	var scale_x = Map_data.hex_width / s.texture.get_width()
+	var scale_y = Map_data.hex_height / s.texture.get_height()
+	s.scale = Vector2(scale_x, scale_y)
 
 	# Utilisation des coordonnées offset stockées dans la cellule
 	s.position = Map_utils.hex_to_pixel_iso(cell.offset_coords.x, cell.offset_coords.y)
@@ -69,6 +80,7 @@ func spawn_tile_object(cell: HexCell):
 # Rendering
 # =========================
 func render_map():
+	
 	for y in range(Map_data.map_height):
 		for x in range(Map_data.map_width):
 			spawn_tile(Map_data.tiles[y][x], x, y)
