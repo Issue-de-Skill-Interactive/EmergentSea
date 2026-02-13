@@ -16,12 +16,8 @@ extends Node2D
 ## Grille de visibilité : true = visible, false = brouillard
 var visibility_grid := {}
 
-## Sprites du brouillard (un par case)
-var fog_sprites := {}
-
-## Référence à la texture de montagne
+## NOUVEAU : Rendu dynamique au lieu de sprites individuels
 var fog_texture: Texture2D = null
-
 var is_initialized := false
 
 
@@ -31,11 +27,11 @@ var is_initialized := false
 func _ready():
 	add_to_group("fog_of_war")
 	
-	# IMPORTANT : Mettre le z-index du node lui-même très haut
+	# Z-index très haut pour être au-dessus de tout
 	z_index = 10000
-	z_as_relative = false  # Ne pas hériter du parent
+	z_as_relative = false
 	
-	print(">>> [FOG] FogOfWar _ready() appelé - Z-INDEX: ", z_index)
+	print(">>> [FOG] FogOfWar _ready() appelé - Rendu DYNAMIQUE")
 	
 	# Charger la texture
 	fog_texture = Map_data.TileMountain
@@ -68,69 +64,66 @@ func _on_map_generated():
 # CRÉATION DU BROUILLARD
 # =========================
 func initialize_fog():
-	"""Crée le brouillard sur toute la carte"""
+	"""Initialise la grille de visibilité (sans créer de sprites)"""
 	print(">>> [FOG] ========================================")
-	print(">>> [FOG] INITIALISATION DU BROUILLARD")
+	print(">>> [FOG] INITIALISATION DU BROUILLARD DYNAMIQUE")
 	print(">>> [FOG] ========================================")
 	print(">>> [FOG] Dimensions carte: ", Map_data.map_width, "x", Map_data.map_height)
 	
 	# Réinitialiser
 	visibility_grid.clear()
-	clear_fog_sprites()
 	
 	var fog_count = 0
 	
-	# Créer le brouillard partout
+	# Créer la grille de visibilité (pas de sprites)
 	for y in range(Map_data.map_height):
 		for x in range(Map_data.map_width):
 			var pos = Vector2i(x, y)
 			visibility_grid[pos] = false  # Tout est caché au départ
-			create_fog_sprite(pos)
 			fog_count += 1
 	
 	is_initialized = true
+	
+	# Forcer le redraw pour afficher le fog
+	queue_redraw()
+	
 	print(">>> [FOG] ========================================")
-	print(">>> [FOG] BROUILLARD CRÉÉ SUR ", fog_count, " CASES")
-	print(">>> [FOG] SPRITES CRÉÉS: ", fog_sprites.size())
+	print(">>> [FOG] BROUILLARD INITIALISÉ SUR ", fog_count, " CASES")
+	print(">>> [FOG] MODE: Rendu dynamique (pas de sprites)")
 	print(">>> [FOG] TOUTE LA CARTE DEVRAIT ÊTRE NOIRE !")
 	print(">>> [FOG] ========================================")
 
 
-func create_fog_sprite(pos: Vector2i):
-	"""Crée un sprite de brouillard pour une case"""
-	if not fog_texture:
+# =========================
+# RENDU DYNAMIQUE
+# =========================
+func _draw():
+	"""Dessine le fog of war directement (pas de sprites)"""
+	if not is_initialized or not fog_texture:
 		return
 	
-	var sprite = Sprite2D.new()
-	sprite.texture = fog_texture
-	sprite.position = Map_utils.case_vers_monde(pos)
+	# Dessiner seulement les cases NON visibles
+	for pos in visibility_grid.keys():
+		if not visibility_grid[pos]:  # Si pas visible, dessiner le fog
+			draw_fog_tile(pos)
+
+
+func draw_fog_tile(pos: Vector2i):
+	"""Dessine une case de brouillard"""
+	var world_pos = Map_utils.case_vers_monde(pos)
 	
-	# NOIR TRÈS OPAQUE pour être ULTRA VISIBLE
-	sprite.modulate = Color(0, 0, 0, fog_opacity)
+	# Position relative au node
+	var local_pos = world_pos - global_position
 	
-	# Adapter la taille pour couvrir toute la case
+	# Calculer l'échelle pour couvrir la case
 	var scale_x = Map_data.hex_width / fog_texture.get_width()
 	var scale_y = Map_data.hex_height / fog_texture.get_height()
-	sprite.scale = Vector2(scale_x * 1.1, scale_y * 1.1)  # 10% plus grand pour éviter les trous
+	var scale_factor = Vector2(scale_x * 1.1, scale_y * 1.1)  # 10% plus grand
 	
-	# CORRECTION : Z-index ENCORE PLUS ÉLEVÉ et absolu
-	sprite.z_index = 9999
-	sprite.z_as_relative = false  # IMPORTANT : Ne pas hériter du parent
-	
-	# Nom pour debug
-	sprite.name = "Fog_%d_%d" % [pos.x, pos.y]
-	
-	add_child(sprite)
-	fog_sprites[pos] = sprite
-
-
-func clear_fog_sprites():
-	"""Supprime tous les sprites de brouillard"""
-	print(">>> [FOG] Suppression de ", fog_sprites.size(), " sprites de brouillard")
-	for sprite in fog_sprites.values():
-		if is_instance_valid(sprite):
-			sprite.queue_free()
-	fog_sprites.clear()
+	# Dessiner la texture avec modulation noire
+	draw_set_transform(local_pos, 0, scale_factor)
+	draw_texture(fog_texture, -fog_texture.get_size() / 2, Color(0, 0, 0, fog_opacity))
+	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)  # Reset transform
 
 
 # =========================
@@ -138,23 +131,17 @@ func clear_fog_sprites():
 # =========================
 func update_vision_for_player(player: Player):
 	"""Met à jour la vision pour un joueur (basé sur ses navires)"""
-	print(">>> [FOG] update_vision_for_player() APPELÉE")
-	
 	if not is_initialized:
-		print(">>> [FOG] ✗ Brouillard pas encore initialisé")
 		return
 	
 	if player == null:
-		print(">>> [FOG] ✗ Player null")
 		return
 		
 	if not player.is_human:
-		print(">>> [FOG] ✗ Player n'est pas humain: %s" % player.player_name)
 		return
 	
 	# Récupérer tous les navires du joueur
 	var player_ships = player.get_navires()
-	print(">>> [FOG] Player: %s, navires: %d" % [player.player_name, player_ships.size()])
 	
 	var revealed_count = 0
 	
@@ -162,16 +149,13 @@ func update_vision_for_player(player: Player):
 	for ship in player_ships:
 		if ship is Navires and ship.is_alive():
 			var ship_pos = ship.case_actuelle
-			print(">>> [FOG] Traitement navire ID %d à position %s" % [ship.id, ship_pos])
 			var count = reveal_around_position(ship_pos)
 			revealed_count += count
-			print(">>> [FOG] Navire %d a révélé %d cases" % [ship.id, count])
 	
-	# Logger seulement si de nouvelles cases révélées
+	# Redessiner si des cases ont été révélées
 	if revealed_count > 0:
-		print(">>> [FOG] ✓ Révélé %d nouvelles cases au total" % revealed_count)
-	else:
-		print(">>> [FOG] Aucune nouvelle case révélée (déjà toutes visibles)")
+		print(">>> [FOG] ✓ Révélé %d nouvelles cases" % revealed_count)
+		queue_redraw()
 
 
 func reveal_around_position(center: Vector2i) -> int:
@@ -210,16 +194,7 @@ func reveal_tile(pos: Vector2i) -> bool:
 	
 	# Marquer comme visible
 	visibility_grid[pos] = true
-	
-	# Cacher le sprite de brouillard
-	if fog_sprites.has(pos):
-		var sprite = fog_sprites[pos]
-		if is_instance_valid(sprite):
-			sprite.queue_free()
-		fog_sprites.erase(pos)
-		return true
-	
-	return false
+	return true
 
 
 func hide_tile(pos: Vector2i):
@@ -234,9 +209,8 @@ func hide_tile(pos: Vector2i):
 	# Marquer comme cachée
 	visibility_grid[pos] = false
 	
-	# Recréer le sprite si nécessaire
-	if not fog_sprites.has(pos):
-		create_fog_sprite(pos)
+	# Redessiner
+	queue_redraw()
 
 
 # =========================
@@ -264,7 +238,8 @@ func reset_fog():
 	print(">>> [FOG] RESET DU BROUILLARD - TOUT REDEVIENT NOIR")
 	print(">>> [FOG] ========================================")
 	for pos in visibility_grid.keys():
-		hide_tile(pos)
+		visibility_grid[pos] = false
+	queue_redraw()
 
 
 func reveal_all():
@@ -273,16 +248,8 @@ func reveal_all():
 	print(">>> [FOG] RÉVÉLATION TOTALE - TOUT DEVIENT VISIBLE")
 	print(">>> [FOG] ========================================")
 	for pos in visibility_grid.keys():
-		reveal_tile(pos)
-
-
-# =========================
-# DEBUG VISUEL
-# =========================
-# Désactivé car mise à jour continue - Utiliser F3 pour les stats
-#func _process(_delta):
-#	if Engine.get_frames_drawn() % 300 == 0:
-#		print(">>> [FOG] Status: ", fog_sprites.size(), " sprites actifs, z_index: ", z_index)
+		visibility_grid[pos] = true
+	queue_redraw()
 
 
 # =========================
@@ -305,7 +272,7 @@ func _input(event):
 		print(">>> [FOG] DEBUG INFO")
 		print(">>> [FOG] ========================================")
 		print(">>> [FOG] Initialisé: ", is_initialized)
-		print(">>> [FOG] Sprites actifs: ", fog_sprites.size())
+		print(">>> [FOG] Mode: Rendu dynamique (_draw)")
 		print(">>> [FOG] Z-index node: ", z_index)
 		print(">>> [FOG] Z-as-relative: ", z_as_relative)
 		print(">>> [FOG] Cases visibles: ", visibility_grid.values().count(true))
