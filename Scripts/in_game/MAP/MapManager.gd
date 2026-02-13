@@ -24,6 +24,7 @@ func _ready():
 		render_map()
 		print(">>> Rendu de la map effectué")
 		#permet de signaler au moteur que la map est générée
+		await get_tree().process_frame
 		emit_signal("map_generated")
 	pass
 

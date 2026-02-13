@@ -364,7 +364,7 @@ func get_enemy_ships() -> Array[Navires]:
 	# Vérifier que player1 et players_manager existent
 	if not player1:
 		return enemies
-	
+
 	if not _try_get_players_manager():
 		return enemies
 	
