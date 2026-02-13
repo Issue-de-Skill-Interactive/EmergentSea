@@ -46,6 +46,15 @@ func spawn_tile(t: String, q: int, r: int):
 		"earth": s.texture = Map_data.TileEarth
 		"forest": s.texture = Map_data.TileForest
 		"mountain": s.texture = Map_data.TileMountain
+		"port": 
+			# Vérifier si TilePort existe dans Map_data
+			if "TilePort" in Map_data:
+				s.texture = Map_data.TilePort
+			else:
+				# Fallback: utiliser une texture de sable si TilePort n'existe pas
+				s.texture = Map_data.TileSand
+				print("Attention: TilePort non trouvé, utilisation de TileSand")
+	
 	s.position = Map_utils.hex_to_pixel_iso(q, r)
 	var scale_x = Map_data.hex_width / s.texture.get_width()
 	var scale_y = Map_data.hex_height / s.texture.get_height()

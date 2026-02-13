@@ -8,12 +8,19 @@ extends Node2D
 @export var water_ratio := 0.55
 
 # =========================
+# Port parameters
+# =========================
+@export var port_count: int = 8
+@export var min_port_distance: int = 15
+
+# =========================
 # Internal data
 # =========================
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var noise: FastNoiseLite = FastNoiseLite.new()
 var height_map := []
 var islands := []
+var ports := []  # Liste des ports générés
 
 
 func _init():
@@ -33,6 +40,8 @@ func generate()-> bool:
 	generate_islands()
 	generate_tiles()
 	compute_ocean_cases()
+	generate_ports()  # Génération des ports après les autres éléments
+	sync_ports_to_map_data()  # Synchroniser avec Map_data
 	return true
 	
 
@@ -43,6 +52,7 @@ func generate()-> bool:
 func init_maps():
 	height_map.clear()
 	Map_data.tiles.clear()
+	ports.clear()
 
 	for y in range(Map_data.map_height):
 		height_map.append([])
@@ -173,3 +183,96 @@ func compute_ocean_cases() -> void:
 		for n in neighbors:
 			if Map_utils.is_case_valid(n) and not visited.has(n):
 				queue.append(n)
+
+
+# =========================
+# Port generation
+# =========================
+## Génère des ports sur les côtes avec distance minimale entre eux
+func generate_ports() -> void:
+	ports.clear()
+	var coastal_tiles: Array = []
+	
+	# 1. Trouver toutes les cases côtières (terre adjacente à l'eau)
+	for y in range(Map_data.map_height):
+		for x in range(Map_data.map_width):
+			if is_coastal_tile(x, y):
+				coastal_tiles.append(Vector2i(x, y))
+	
+	if coastal_tiles.is_empty():
+		print("Aucune case côtière trouvée pour placer des ports")
+		return
+	
+	print("Cases côtières trouvées: ", coastal_tiles.size())
+	
+	# 2. Placer les ports avec distance minimale
+	var attempts: int = 0
+	var max_attempts: int = port_count * 100  # Éviter une boucle infinie
+	
+	while ports.size() < port_count and attempts < max_attempts:
+		attempts += 1
+		
+		# Choisir une case côtière aléatoire
+		var random_index: int = rng.randi_range(0, coastal_tiles.size() - 1)
+		var candidate: Vector2i = coastal_tiles[random_index]
+		
+		# Vérifier la distance avec les ports existants
+		if is_valid_port_location(candidate):
+			ports.append(candidate)
+			Map_data.tiles[candidate.y][candidate.x] = "port"
+			print("Port placé à: ", candidate)
+	
+	print("Ports générés: ", ports.size(), "/", port_count)
+
+
+## Synchronise les ports avec Map_data (appelé après generate_ports)
+func sync_ports_to_map_data() -> void:
+	# Copier les ports dans Map_data.ports
+	Map_data.ports.clear()
+	for port in ports:
+		Map_data.ports.append(port)
+
+
+## Vérifie si une case est côtière (terre avec eau adjacente)
+func is_coastal_tile(x: int, y: int) -> bool:
+	var pos: Vector2i = Vector2i(x, y)
+	
+	# La case doit être de la terre (pas de l'eau)
+	if not Map_utils.is_case_valid(pos):
+		return false
+	
+	var tile_type: String = Map_data.tiles[y][x]
+	if tile_type == "water" or tile_type == "deepwater":
+		return false
+	
+	# Vérifier si au moins une case adjacente est de l'eau navigable
+	var neighbors: Array = [
+		Vector2i(x + 1, y),
+		Vector2i(x - 1, y),
+		Vector2i(x, y + 1),
+		Vector2i(x, y - 1)
+	]
+	
+	for neighbor in neighbors:
+		if Map_utils.is_case_valid(neighbor):
+			var neighbor_type: String = Map_data.tiles[neighbor.y][neighbor.x]
+			if neighbor_type == "water" or neighbor_type == "deepwater":
+				return true
+	
+	return false
+
+
+## Vérifie si un emplacement de port respecte la distance minimale
+func is_valid_port_location(candidate: Vector2i) -> bool:
+	for existing_port in ports:
+		var distance: float = calculate_distance(candidate, existing_port)
+		if distance < min_port_distance:
+			return false
+	return true
+
+
+## Calcule la distance euclidienne entre deux positions
+func calculate_distance(a: Vector2i, b: Vector2i) -> float:
+	var dx: float = a.x - b.x
+	var dy: float = a.y - b.y
+	return sqrt(dx * dx + dy * dy)

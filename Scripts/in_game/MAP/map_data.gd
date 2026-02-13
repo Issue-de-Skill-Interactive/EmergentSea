@@ -5,6 +5,7 @@ extends Node
 # data :
 static var tiles := []
 static var ocean_cases: Array = []	#liste des cases navigables
+static var ports := []  # liste des positions des ports (Vector2i)
 
 # =========================
 # Textures
@@ -15,6 +16,7 @@ static var TileSand: Texture2D = preload("res://textures/tiles/TileSand.png")
 static var TileEarth: Texture2D = preload("res://textures/tiles/TileEarth.png")
 static var TileForest: Texture2D = preload("res://textures/tiles/TileForest.png")
 static var TileMountain: Texture2D = preload("res://textures/tiles/TileMountain.png")
+static var TilePort: Texture2D = preload("res://textures/tiles/TilePort.png")
 
 
 # =========================
@@ -51,6 +53,12 @@ static var large_radius := Vector2(85.0, 120.0)
 static var small_power := Vector2(1.4, 1.9)
 static var medium_power := Vector2(1.1, 1.5)
 static var large_power := Vector2(0.75, 1.05)
+
+# =========================
+# Port parameters
+# =========================
+static var port_count: int = 8  # Nombre de ports à générer
+static var min_port_distance: int = 15  # Distance minimale entre deux ports (en tiles)
 
 func _init():
 	add_to_group("map_data")
