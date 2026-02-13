@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Emergen-Sea"
-run/main_scene="uid://ertxm6ey6fes"
+run/main_scene="uid://dyaddafvyuotm"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://Assets/icon.svg"
 
