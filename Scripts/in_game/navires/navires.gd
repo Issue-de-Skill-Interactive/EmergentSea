@@ -55,6 +55,9 @@ var stats_panel : UI_stats_navire
 @onready var data := get_tree().get_first_node_in_group("shared_entities")
 @onready var players_manager: PlayersManager = get_tree().get_first_node_in_group("players_manager")
 
+# AJOUT : Référence au fog manager pour mise à jour en temps réel
+var fog_manager: FogManager = null
+
 
 # =========================
 # PÊCHE
@@ -139,6 +142,10 @@ func _ready():
 	# Initialisation de l'UI
 	_init_stats_ui()
 	
+	# AJOUT : Récupérer le FogManager
+	fog_manager = get_tree().get_first_node_in_group("fog_manager")
+	if fog_manager:
+		print(">>> Navire [%d] - FogManager connecté" % id)
 	
 	# Debug
 	var owner_name = player_owner.player_name if player_owner else "AUCUN"
@@ -508,12 +515,35 @@ func _process_movement(delta: float) -> void:
 	])
 
 	if distance < 10:
+		# AJOUT : Sauvegarder l'ancienne position pour détecter le changement
+		var old_case = case_actuelle
+		
 		global_position = next_pos
 		path.remove_at(0)
 		case_actuelle = next_case
 		energie = max(energie - 1, 0)
 		
 		print(">>> Navire [%d] arrivé à %s - Cases restantes: %d" % [id, case_actuelle, path.size()])
+		
+		# DEBUG COMPLET
+		print(">>> [DEBUG] old_case: %s, case_actuelle: %s, changé: %s" % [old_case, case_actuelle, old_case != case_actuelle])
+		if player_owner:
+			print(">>> [DEBUG] player_owner existe: %s, is_human: %s" % [player_owner.player_name, player_owner.is_human])
+		else:
+			print(">>> [DEBUG] player_owner est NULL !")
+		
+		# AJOUT : Actualiser le fog si c'est un navire du joueur humain et qu'il a changé de case
+		if old_case != case_actuelle and player_owner and player_owner.is_human:
+			print(">>> [DEBUG] ✓ CONDITIONS OK - Appel de _update_fog_of_war()")
+			_update_fog_of_war()
+		else:
+			print(">>> [DEBUG] ✗ CONDITIONS PAS OK - Pas de mise à jour du fog")
+			if old_case == case_actuelle:
+				print("    Raison: case n'a pas changé")
+			if not player_owner:
+				print("    Raison: pas de player_owner")
+			if player_owner and not player_owner.is_human:
+				print("    Raison: player_owner n'est pas humain")
 		
 		if path.is_empty():
 			is_moving = false
@@ -522,6 +552,52 @@ func _process_movement(delta: float) -> void:
 			print(">>> Navire [%d] DESTINATION FINALE atteinte!" % id)
 	else:
 		global_position += direction.normalized() * vitesse * delta
+
+
+# =========================
+# FOG OF WAR UPDATE
+# =========================
+func _update_fog_of_war() -> void:
+	"""Met à jour le fog of war autour de ce navire (pour joueur humain uniquement)"""
+	print(">>> [NAVIRE %d] _update_fog_of_war() APPELÉE !" % id)
+	
+	if not player_owner or not player_owner.is_human:
+		print(">>> [NAVIRE %d] SKIP - pas de player_owner ou pas humain" % id)
+		return
+	
+	print(">>> [NAVIRE %d] Actualisation du fog à la position %s" % [id, case_actuelle])
+	
+	# DEBUG : Vérifier que fog_manager existe
+	if not fog_manager:
+		print(">>> [NAVIRE %d] ERREUR - fog_manager est NULL, tentative de récupération..." % id)
+		fog_manager = get_tree().get_first_node_in_group("fog_manager")
+		if fog_manager:
+			print(">>> [NAVIRE %d] fog_manager récupéré avec succès" % id)
+		else:
+			print(">>> [NAVIRE %d] ERREUR CRITIQUE - fog_manager introuvable !" % id)
+	
+	# Méthode 1 : Via le FogManager (préféré car utilise la logique centralisée)
+	if fog_manager:
+		print(">>> [NAVIRE %d] fog_manager existe, vérification de force_update..." % id)
+		if fog_manager.has_method("force_update"):
+			print(">>> [NAVIRE %d] ✓ Appel de fog_manager.force_update()" % id)
+			fog_manager.force_update()
+			return
+		else:
+			print(">>> [NAVIRE %d] ✗ fog_manager n'a pas la méthode force_update !" % id)
+	
+	# Méthode 2 : Directement via FogOfWar (fallback si FogManager pas dispo)
+	print(">>> [NAVIRE %d] Fallback - tentative via FogOfWar direct" % id)
+	var fog_of_war = get_tree().get_first_node_in_group("fog_of_war")
+	if fog_of_war:
+		print(">>> [NAVIRE %d] FogOfWar trouvé" % id)
+		if fog_of_war.has_method("reveal_around_position"):
+			print(">>> [NAVIRE %d] ✓ Appel de fog_of_war.reveal_around_position(%s)" % [id, case_actuelle])
+			fog_of_war.reveal_around_position(case_actuelle)
+		else:
+			print(">>> [NAVIRE %d] ✗ FogOfWar n'a pas la méthode reveal_around_position !" % id)
+	else:
+		print(">>> [NAVIRE %d] ✗ FogOfWar introuvable !" % id)
 
 
 # =========================
