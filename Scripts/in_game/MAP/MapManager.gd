@@ -75,7 +75,6 @@ func render_map():
 
 func spawn_tile(t: String, col: int, row: int):
 	var s := Sprite2D.new()
-
 	match t:
 		"deepwater": s.texture = Map_data.TileDeepWater
 		"water": s.texture = Map_data.TileWater
@@ -83,7 +82,8 @@ func spawn_tile(t: String, col: int, row: int):
 		"earth": s.texture = Map_data.TileEarth
 		"forest": s.texture = Map_data.TileForest
 		"mountain": s.texture = Map_data.TileMountain
-
 	s.position = Map_utils.hex_to_pixel_iso(col, row)
-	
+	var scale_x = Map_data.hex_width / s.texture.get_width()
+	var scale_y = Map_data.hex_height / s.texture.get_height()
+	s.scale = Vector2(scale_x, scale_y)
 	add_child(s)

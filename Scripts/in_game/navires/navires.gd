@@ -352,14 +352,20 @@ func _unhandled_input(event: InputEvent) -> void:
 				return  # On a cliqué sur un navire, ne pas se déplacer
 			
 			if energie > 0 and not is_moving and not is_fishing:
-				if Map_utils.is_on_water(mouse_pos):
-					path = Pathfinder.calculer_chemin(case_actuelle, Map_utils.monde_vers_case(mouse_pos))
+				var target_case = Map_utils.monde_vers_case(mouse_pos)
+				if Map_utils.is_case_navigable(target_case):
+					path = Pathfinder.calculer_chemin(case_actuelle, target_case)
 					if not path.is_empty():
+						print("Chemin: ", path)
 						is_moving = true
 						target_position = mouse_pos
 						show_arrow = true
 						queue_redraw()
 						get_viewport().set_input_as_handled()
+					else:
+						print("ERREUR: Chemin vide!")
+				else:
+					print("ERREUR: Case cible NON navigable!")
 		
 		# CLIC DROIT → TIR
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
@@ -469,27 +475,42 @@ func _process(delta):
 	# Pêche
 	_update_fishing(delta)
 	
-	# Déplacement (seulement pour le navire sélectionné)
-	if is_selected and is_moving and not path.is_empty():
+	# Déplacement (pour TOUS les navires en mouvement, pas juste le sélectionné)
+	if is_moving and not path.is_empty():
 		_process_movement(delta)
 
 
 func _process_movement(delta: float) -> void:
 	"""Gère le déplacement du navire"""
+	if path.is_empty():
+		print("Navire [%d] - Chemin vide, arrêt du mouvement" % id)
+		is_moving = false
+		show_arrow = false
+		queue_redraw()
+		return
+	
 	var next_case = path[0]
 	var next_pos: Vector2 = Map_utils.case_vers_monde(next_case)
 	var direction := next_pos - global_position
+	var distance = direction.length()
+	
+	print("Navire [%d] - Distance: %.1f - Prochaine case: %s - Cases restantes: %d" % [
+		id, distance, next_case, path.size()
+	])
 
-	if direction.length() < 5:
+	if distance < 10:
 		global_position = next_pos
 		path.remove_at(0)
 		case_actuelle = next_case
 		energie = max(energie - 1, 0)
 		
+		print(">>> Navire [%d] arrivé à %s - Cases restantes: %d" % [id, case_actuelle, path.size()])
+		
 		if path.is_empty():
 			is_moving = false
 			show_arrow = false  # Cacher la flèche quand on arrive
 			queue_redraw()
+			print(">>> Navire [%d] DESTINATION FINALE atteinte!" % id)
 	else:
 		global_position += direction.normalized() * vitesse * delta
 
@@ -611,6 +632,15 @@ func finish_fishing() -> void:
 # PATHFINDING
 # =========================
 func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
+	# Vérifier que start et goal sont navigables
+	if not Map_utils.is_case_navigable(start):
+		print("ERREUR: Position de départ non navigable: ", start)
+		return []
+	
+	if not Map_utils.is_case_navigable(goal):
+		print("ERREUR: Position d'arrivée non navigable: ", goal)
+		return []
+	
 	var open_set := [start]
 	var came_from := {}
 	var g_score := { start: 0 }
@@ -628,7 +658,8 @@ func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
 			return result
 
 		for neighbor in get_neighbors(current):
-			if not Map_utils.is_on_water(Map_utils.case_vers_monde(neighbor)):
+			# CORRECTION: Utiliser is_case_navigable au lieu de is_on_water
+			if not Map_utils.is_case_navigable(neighbor):
 				continue
 
 			var tentative = g_score[current] + 1
@@ -639,6 +670,7 @@ func calculer_chemin(start: Vector2i, goal: Vector2i) -> Array:
 				if neighbor not in open_set:
 					open_set.append(neighbor)
 
+	print("AUCUN CHEMIN TROUVÉ de ", start, " à ", goal)
 	return []
 
 

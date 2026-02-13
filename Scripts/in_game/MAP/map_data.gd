@@ -23,10 +23,10 @@ static var TileMountain: Texture2D = preload("res://textures/tiles/TileMountain.
 # =========================
 # Map parameters
 # =========================
-static var map_width : int = 256
-static var map_height : int = 128
-static var hex_width : int = 256
-static var hex_height : int = 128
+static var map_width : int = 64
+static var map_height : int = 32
+static var hex_width : int = 512
+static var hex_height : int = 256
 
 # =========================
 # Noise parameters
