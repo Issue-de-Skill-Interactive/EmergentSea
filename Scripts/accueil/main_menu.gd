@@ -1,6 +1,6 @@
 extends Control
 
-const SOLO_SCENE_PATH := "res://Scenes/Main.tscn"
+const SOLO_SCENE_PATH := "res://Scenes/in_game/Main.tscn"
 const SAVE_PATH := "user://controls.cfg"
 
 # Actions rebindables
